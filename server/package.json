@@ -6,7 +6,6 @@
   "scripts": {
     "dev": "tsx watch server.ts",
     "build": "tsc -p tsconfig.build.json",
-    "prestart": "yarn build",
     "start": "node dist/server.js",
     "lint": "eslint . --ext .ts --max-warnings 0",
     "test": "jest",
