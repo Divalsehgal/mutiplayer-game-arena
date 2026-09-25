@@ -21,7 +21,6 @@ export const ticTacToeGameHandler = {
         
         // If we are starting from the lobby, the host's action is enough to start for everyone
         if (currentStatus === 'waiting-for-players') {
-            console.log(`[TTT] Initializing first match for room ${room.id}`);
             return {
                 newGameState: {
                     ...state,
@@ -41,7 +40,6 @@ export const ticTacToeGameHandler = {
         }
 
         if (readyPlayers.length >= players.length) {
-            console.log(`[TTT] Resetting match (rematch) for room ${room.id}`);
             return {
                 newGameState: {
                     ...gameState,

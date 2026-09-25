@@ -18,8 +18,9 @@ vi.mock('../store/auth', () => ({
     useAuthStore: () => ({ user: { id: 'u1' } })
 }));
 
+const mockNavigate = vi.fn();
 vi.mock('react-router-dom', () => ({
-    useNavigate: () => vi.fn()
+    useNavigate: () => mockNavigate
 }));
 
 vi.mock('./useSocket', () => ({
@@ -179,5 +180,30 @@ describe('useGameLogic', () => {
         renderHook(() => useGameLogic('r1'));
 
         expect(mockSetRoom).toHaveBeenCalledWith(null);
+    });
+
+    it('returns to the waiting room if the match is interrupted', () => {
+        vi.mocked(roomStore.useRoomStore).mockReturnValue({
+            room: { status: 'waiting-for-players' },
+            setRoom: mockSetRoom,
+            ttlWarning: null,
+            setTtlWarning: mockSetTtlWarning,
+            reset: vi.fn()
+        } as any);
+
+        renderHook(() => useGameLogic('r1'));
+
+        expect(mockNavigate).toHaveBeenCalledWith('/room/r1');
+    });
+
+    it('ignores game actions without a room id', () => {
+        const { result } = renderHook(() => useGameLogic(undefined));
+
+        result.current.handleRPSMove('Rock');
+        result.current.handleSnakeLadderMove();
+        result.current.handleTicTacToeMove(0);
+        result.current.handleNextRound();
+
+        expect(socket.emit).not.toHaveBeenCalled();
     });
 });

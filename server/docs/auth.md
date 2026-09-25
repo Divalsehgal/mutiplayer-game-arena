@@ -1,71 +1,70 @@
-# Authentication & Identity System Documentation
+# Accounts and sign-in
 
-This document outlines the architecture, features, and future plans for the authentication system.
+How players sign up, sign in, and stay signed in.
 
-## 🏗️ Architecture
+## Layers
 
-The system follows a strict **Layered Architecture** to ensure decoupling and scalability:
+- **Routes** (`src/routes/auth`, `src/routes/user`): Express routers. Every
+  request body goes through a zod schema (`src/validators`) first.
+- **Controllers** (`src/controllers/auth`, `src/controllers/user`): HTTP
+  concerns only: reading the request, setting cookies, and shaping the
+  response.
+- **Services** (`src/services/auth`, `src/services/user`): password hashing,
+  token issuing, and session storage.
+- **Models** (`src/models/auth`, `src/models/user`, `src/models/session`):
+  Mongoose schemas. The services query them directly. There is no separate
+  repository layer for accounts; `src/repositories/auth` and
+  `src/repositories/user` are empty.
 
-- **Delivery Layer (Controllers)**: Handles HTTP concerns, cookies, and responses. (e.g., `AuthController`, `UserController`)
-- **Business Layer (Services)**: Orchestrates complex logic, token generation, and cross-service coordination. (e.g., `AuthService`, `UserService`)
-- **Data Access Layer (Repositories)**: Abstracts Mongoose queries away from business logic. (e.g., `AuthRepository`, `UserRepository`)
-- **Domain Layer (Models)**: Defines the data schema and core business methods (e.g., password hashing, JWT generation).
-- **Contract Layer (DTOs & Validators)**: Ensures data integrity via Zod schemas and TypeScript interfaces.
+## Email and password
 
----
+- `POST /auth/signup` and `POST /auth/signin`. Passwords are hashed with bcrypt.
+  A password is required unless the account signs in with Google.
+- A wrong email or password returns `401` with a message the login page shows
+  as-is ("Invalid Credentials").
 
-## ✅ Completed Features
+## Google sign-in
 
-### 1. Robust Signin / Signup
+1. The client shows Google's button (`@react-oauth/google`, configured with
+   `VITE_GOOGLE_CLIENT_ID`) and receives an ID token.
+2. It sends the token to `POST /auth/google`.
+3. The server checks it with `google-auth-library`, using the same client ID as
+   the audience (`GOOGLE_CLIENT_ID`, or `CLIENT_ID`).
+4. The Google email is matched to an existing account, or a new one is created
+   from the Google name and picture. An existing account without an avatar
+   gets the Google picture.
+5. The server issues its own tokens, exactly as for email sign-in.
 
-- Password hashing using `bcrypt`.
-- Double Token System: **Access Token** (1 hour) + **Refresh Token** (7 days).
-- HTTP-Only Cookies for enhanced security against XSS.
+Every failure returns `401 "Google authentication failed"`, and the server logs
+the real reason as `Google sign-in failed: …`. Common causes:
 
-### 2. Validation Layer
+| Log message | Meaning |
+|---|---|
+| `Wrong recipient, payload audience != requiredAudience` | The client and server use different Google client IDs |
+| `Token used too late` | The token expired, or the computer's clock is wrong |
+| `Google OAuth env vars missing` | `GOOGLE_CLIENT_ID`/`GOOGLE_CLIENT_SECRET` aren't set |
 
-- Global Zod validation middleware (`validateRequest`).
-- Strict schemas for input validation:
-  - Signup (Strong password enforcement, unique username).
-  - Signin (Format checks).
-  - Profile Update (URL validation for avatars).
+If the Google button itself errors in the browser with "The given origin is not
+allowed", add the site's origin (for example `http://localhost:5173`) to the
+client ID's **Authorized JavaScript origins** in Google Cloud Console.
 
-### 3. User Profile API
+## Tokens and sessions
 
-- Separated `UserModel` from `AuthModel` (pointing to the same `User` collection).
-- Protected `GET /user/profile` and `PATCH /user/profile` routes.
-- `AuthMiddleware` for verifying sessions via cookies or headers.
+- **Access token:** lasts 1 hour. **Refresh token:** lasts 7 days, and is stored
+  in the `Session` collection, where MongoDB removes it once it expires.
+- Both are set as httpOnly cookies (`access_token`, `refresh_token`) and never
+  returned in the response body, so the page's JavaScript can't read them.
+- `POST /auth/refresh` swaps in a new refresh token on the same session row.
+- `POST /auth/logout` clears both cookies.
+- `GET /user/profile` and `PATCH /user/profile` sit behind `authMiddleware`,
+  which verifies the access token and checks that the account still exists.
+- In production (`NODE_ENV=production`), cookies are `Secure` and
+  `SameSite=None`, and issuing or checking a token throws unless `JWT_SECRET`
+  and `REFRESH_TOKEN_SECRET` are set. The server still boots without them.
 
-### 4. Session Management
+## Not done yet
 
-- **Token Refresh**: Automatic session extension via `/auth/refresh`.
-- **Logout**: Complete clearing of security cookies.
-
----
-
-## 🚀 The Plan: Google SSO (OAuth2)
-
-Our next objective is to integrate Google Single Sign-On to allow users to authenticate without a password.
-
-### Phase 1: Infrastructure
-
-- Set up Google Cloud Console credentials.
-- Add these env vars:
-  - `VITE_GOOGLE_CLIENT_ID` in the client environment for the Google OAuth provider.
-  - `GOOGLE_CLIENT_ID`/`GOOGLE_CLIENT_SECRET` or `CLIENT_ID`/`CLIENT_SECRET` in the server environment for token verification.
-- Configure authorized origins and redirect URIs in Google Cloud Console.
-
-### Phase 2: Implementation Flow
-
-1. **Initiate**: Redirect user to Google's consent screen.
-2. **Callback**: Handle Google's redirect with an authorization code.
-3. **Verify**: Exchange code for `id_token` and verify user identity via `google-auth-library`.
-4. **Link/Sync**:
-   - match Google's email with existing DB users.
-   - If new, create a user record.
-5. **Issue Tokens**: Generate our custom Access/Refresh tokens to start the session.
-
-### Phase 3: Testing & UI
-
-- Verify session persistence across Google and Local logins.
-- Ensure profile data (like avatar/name) is correctly synced from Google.
+- **Rate limiting on the sign-in routes** (for example `express-rate-limit`).
+- **Socket re-authentication after the access cookie expires.** A socket that
+  reconnects after an hour, before the page has refreshed the session, is
+  treated as a guest until it does.

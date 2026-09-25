@@ -13,10 +13,13 @@ yarn dev       # vite dev server
 yarn build     # tsc && vite build
 yarn test      # vitest run
 yarn test:watch
+yarn test:coverage  # coverage across every file in src/, not just tested ones
 yarn lint
 ```
 
 ## Environment variables
+
+Copy `.env.example` to `.env`. Neither value is secret, but `.env` is git-ignored.
 
 | Variable | Purpose |
 |---|---|
@@ -33,7 +36,7 @@ client/src/
     client.ts        # apiFetch(): fetch wrapper with cookie-based auth + 401 refresh-and-retry
     socket.ts         # the one Socket.IO client instance + connectSocket()/getPlayerUid()
   components/
-    ui/               # shadcn-style primitives (button, card, input, toast, ...)
+    ui/               # small primitives: button, card, input
     GameHeader/        # shared scoreboard header for all three games
     RPSArena/, SnakeLadderArena/, TicTacToeArena/   # per-game board UI
     InactivityWarning/ # room-TTL countdown banner
@@ -45,12 +48,12 @@ client/src/
     useRoomLogic.ts      # RoomScreen-only: wraps useRoomConnection, adds "start game" + auto-nav to /game
     useGameLogic.ts      # GameScreen-only: wraps useRoomConnection, adds move handlers + auto-nav to /room
     useSocketEvent.ts    # typed socket.on/off effect helper
-    use-toast.ts         # toast state (shadcn pattern); rendered by <Toaster /> in App.tsx
   screens/
     AuthScreen/, LobbyScreen/, RoomScreen/, GameScreen/
   store/
     auth/             # Zustand: user, session state, login/logout/checkAuth
     room/             # Zustand: current room, TTL warning, round history
+  constants/          # game display names (GAME_NAMES) and the Snakes & Ladders board
   types/              # RoomState/Player/GameState + the Socket.IO event map
 ```
 
@@ -70,8 +73,15 @@ login round-trip instead of dumping the user at the lobby.
 `apiFetch` (`api/client.ts`) is a thin `fetch` wrapper that always sends
 `credentials: 'include'`. On a `401` it transparently calls `POST
 /auth/refresh` (de-duplicated so concurrent 401s share one refresh call) and
-retries the original request once; if refresh fails it logs out and
-redirects to `/login`.
+retries the original request once; if refresh fails it logs out (no hard
+redirect, which would re-trigger `checkAuth` and loop). The sign-in endpoints
+(`/auth/signin`, `/auth/signup`, `/auth/google`) are excluded: a 401 there
+means wrong credentials, so it's returned as-is and the login page shows the
+server's message.
+
+Error messages are written for players: a failed Google sign-in says "Google
+sign-in didn't work", and an unreachable server says "Can't reach the server
+right now" rather than the browser's "Failed to fetch".
 
 ## Socket connection lifecycle
 
@@ -96,9 +106,26 @@ game screen — the per-move socket emits (`handleRPSMove`,
 `handleSnakeLadderMove`, `handleTicTacToeMove`, `handleNextRound`).
 
 If the same player opens the room from a second tab or device,
-`session-taken-over` fires on the now-stale tab: it shows a toast and swaps
-to `<SessionSupersededScreen />` instead of continuing to render a room that
+`session-taken-over` fires on the now-stale tab, which swaps to
+`<SessionSupersededScreen />` instead of continuing to render a room that
 will never update again.
+
+## Lobby and the computer opponent
+
+The lobby asks for a display name (shared by "create" and "join"), then:
+
+- **Create a room:** pick a game and an opponent. "Other players" also asks
+  whether the room is listed publicly or code-only. "Computer" hides that
+  choice, sends `vsComputer: true`, and navigates straight to `/game/:id`
+  because the server starts the game immediately.
+- **Join with a code**, or pick one of the **Open rooms** (refreshed every
+  10s). A full room shows "Watch" instead of "Join".
+
+If a computer game comes back without a player marked `isBot` (an out-of-date
+server that ignored `vsComputer`), the lobby leaves that room and shows an
+error rather than dropping the player into an empty waiting room.
+
+Errors are shown inline on the page, not with `alert()`.
 
 ## Games
 
@@ -107,6 +134,13 @@ server-pushed `gameState` + a handful of move callbacks — no game rules live
 on the client. `GameScreen` picks the right arena via a `gameType ->
 component` map, so adding a new game client-side is "add one arena component
 + one registry entry," mirroring the server's `gameRegistry`.
+
+## Wording and visuals
+
+Keep on-screen text plain and human ("Waiting room", "Start game", "Still
+there?"), not sci-fi flavour text, and don't use emoji as decoration. Icons come
+from `lucide-react`. The Rock Paper Scissors moves and the snake/ladder markers
+are icons with text labels.
 
 ## Testing
 

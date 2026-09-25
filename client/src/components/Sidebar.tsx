@@ -1,13 +1,7 @@
 // React import not required with the new JSX transform
 import { useAuthStore } from "../store/auth";
 import { Button } from "./ui/button";
-import {
-  LogOut,
-  User as UserIcon,
-  Settings,
-  Home,
-  Gamepad2,
-} from "lucide-react";
+import { LogOut, User as UserIcon, Home } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 
 interface SidebarProps {
@@ -32,11 +26,7 @@ const Sidebar = ({ onAction }: SidebarProps) => {
     onAction?.();
   };
 
-  const menuItems = [
-    { icon: Home, label: "Lobby", path: "/" },
-    { icon: Gamepad2, label: "Games", path: "/games" },
-    { icon: Settings, label: "Settings", path: "/settings" },
-  ];
+  const menuItems = [{ icon: Home, label: "Lobby", path: "/" }];
 
   return (
     <aside className="w-64 bg-card border-r border-border h-full flex flex-col p-4 overflow-y-auto">
@@ -56,7 +46,7 @@ const Sidebar = ({ onAction }: SidebarProps) => {
           <span className="font-bold text-sm truncate w-32">
             {user.user_name}
           </span>
-          <span className="text-[10px] text-muted-foreground truncate w-32">
+          <span className="text-xs text-muted-foreground truncate w-32">
             {user.email}
           </span>
         </div>
@@ -67,7 +57,7 @@ const Sidebar = ({ onAction }: SidebarProps) => {
           <Button
             key={item.path}
             variant={location.pathname === item.path ? "secondary" : "ghost"}
-            className="w-full justify-start gap-3 h-11 font-bold"
+            className="w-full justify-start gap-3 h-11 font-medium"
             onClick={() => handleNavigate(item.path)}
           >
             <item.icon className="w-4 h-4" />
@@ -79,11 +69,11 @@ const Sidebar = ({ onAction }: SidebarProps) => {
       <div className="mt-auto border-t border-border pt-4">
         <Button
           variant="ghost"
-          className="w-full justify-start gap-3 h-11 text-destructive hover:text-destructive hover:bg-destructive/10 font-bold"
+          className="w-full justify-start gap-3 h-11 text-destructive hover:text-destructive hover:bg-destructive/10 font-medium"
           onClick={handleLogout}
         >
           <LogOut className="w-4 h-4" />
-          Logout
+          Log out
         </Button>
       </div>
     </aside>

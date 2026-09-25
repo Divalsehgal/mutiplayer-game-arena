@@ -79,7 +79,7 @@ describe('RoomController', () => {
     });
 
     it('should allow extending a room', () => {
-        const mockRoom = { id: 'room1', players: [] };
+        const mockRoom = { id: 'room1', players: [{ playerUid: 'user123', socketId: 'socket123' }] };
         mockRoomService.extendRoom.mockReturnValue(mockRoom);
         mockRoomRepository.getRoom.mockReturnValue(mockRoom);
         const callback = jest.fn();
@@ -139,5 +139,56 @@ describe('RoomController', () => {
 
         controller.joinRoom(mockSocket, { roomId: 'r1', name: 'N' }, callback);
         expect(callback).toHaveBeenCalledWith({ ok: false, error: 'Join error' });
+    });
+
+    describe('with a computer opponent', () => {
+        let mockBotRunner: any;
+
+        beforeEach(() => {
+            mockBotRunner = { schedule: jest.fn(), cancel: jest.fn() };
+            mockGameService.handleReady = jest.fn();
+            controller = new RoomController(mockIo, mockRoomService, mockGameService, mockRoomRepository, mockBotRunner);
+        });
+
+        it('starts the game straight away and lets the computer act', () => {
+            mockRoomService.createRoom.mockReturnValue({ id: 'room1' });
+            mockRoomRepository.serializeRoom.mockReturnValue({ id: 'room1' });
+            const callback = jest.fn();
+
+            controller.createRoom(mockSocket, { hostName: 'Host', gameType: 'RPS', vsComputer: true }, callback);
+
+            expect(mockRoomService.createRoom).toHaveBeenCalledWith(expect.objectContaining({ vsComputer: true }));
+            expect(mockGameService.handleReady).toHaveBeenCalledWith('room1', 'user123');
+            expect(mockBotRunner.schedule).toHaveBeenCalledWith('room1');
+            expect(callback).toHaveBeenCalledWith(expect.objectContaining({ ok: true, roomId: 'room1' }));
+        });
+
+        it('does not auto-start a normal room', () => {
+            mockRoomService.createRoom.mockReturnValue({ id: 'room1' });
+
+            controller.createRoom(mockSocket, { hostName: 'Host', gameType: 'RPS' }, jest.fn());
+
+            expect(mockGameService.handleReady).not.toHaveBeenCalled();
+            expect(mockBotRunner.schedule).not.toHaveBeenCalled();
+        });
+
+        it('cancels any pending computer move when the room closes', () => {
+            mockRoomService.leaveRoom.mockReturnValue({ roomId: 'room1', roomDeleted: true });
+
+            controller.leaveRoom(mockSocket, { roomId: 'room1' });
+
+            expect(mockBotRunner.cancel).toHaveBeenCalledWith('room1');
+            expect(mockIo.to).not.toHaveBeenCalled();
+        });
+    });
+
+    it('does not call back when extending a room that no longer exists', () => {
+        mockRoomService.extendRoom.mockReturnValue(null);
+        mockRoomRepository.getRoom.mockReturnValue({ id: 'gone', players: [{ playerUid: 'user123' }] });
+        const callback = jest.fn();
+
+        controller.extendRoom(mockSocket, { roomId: 'gone' }, callback);
+
+        expect(callback).not.toHaveBeenCalled();
     });
 });

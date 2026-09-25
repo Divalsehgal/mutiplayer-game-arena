@@ -77,7 +77,6 @@ export const rpsGameHandler = {
 
         if (state.status === 'waiting_for_ready') return { newGameState: state };
 
-        console.log(`[RPS] Move received from ${playerUid}: ${move}`);
         const playerChoices = { ...state.playerChoices, [playerUid]: move as string };
 
         if (Object.keys(playerChoices).length >= players.length) {

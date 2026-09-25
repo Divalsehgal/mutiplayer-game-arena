@@ -45,4 +45,12 @@ describe('AuthModel', () => {
         const isValid = await auth.comparePassword('any');
         expect(isValid).toBe(false);
     });
+
+    it('should require a password unless the account uses Google sign-in', () => {
+        const emailAccount = new AuthModel({ userId: new mongoose.Types.ObjectId(), email: 'a@test.com' });
+        expect(emailAccount.validateSync()?.errors.password).toBeDefined();
+
+        const googleAccount = new AuthModel({ userId: new mongoose.Types.ObjectId(), email: 'b@test.com', googleId: 'g1' });
+        expect(googleAccount.validateSync()?.errors.password).toBeUndefined();
+    });
 });

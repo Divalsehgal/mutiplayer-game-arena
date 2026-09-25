@@ -10,4 +10,5 @@ export interface Player {
     avatar?: string;
     score?: number;
     lastDisconnectedAt?: number | null;
+    isBot?: boolean;
 }

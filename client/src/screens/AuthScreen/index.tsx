@@ -9,11 +9,10 @@ import {
   CardHeader,
   CardTitle,
   CardContent,
-  CardFooter,
 } from "../../components/ui/card";
 import { Button } from "../../components/ui/button";
-import { ShieldCheck, LogIn, UserPlus } from "lucide-react";
 import { EmailAuthForm } from "./components/EmailAuthForm";
+import { HowItsBuiltWidget } from "./components/HowItsBuiltWidget";
 
 const AuthScreen = () => {
   const [isLogin, setIsLogin] = useState(true);
@@ -56,10 +55,10 @@ const AuthScreen = () => {
         setAuth(user, accessToken);
         navigate(redirectTo);
       } else {
-        setError((data && data.message) || "Authentication failed");
+        setError((data && data.message) || "Couldn't sign you in. Check your details and try again.");
       }
     } catch (err) {
-      setError("An unexpected error occurred");
+      setError("Something went wrong. Please try again.");
       console.error(err);
     }
   };
@@ -73,54 +72,39 @@ const AuthScreen = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 bg-background relative overflow-hidden">
-      {/* Background Blobs */}
-      <div className="bg-blob blob-primary w-96 h-96 -top-48 -left-48"></div>
-      <div className="bg-blob blob-accent w-96 h-96 -bottom-48 -right-48"></div>
-
+    <div className="min-h-screen flex items-center justify-center p-4 bg-background">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="w-full max-w-96 z-10"
+        className="w-full max-w-96"
       >
         <div className="text-center mb-8">
-          <motion.div
-            initial={{ scale: 0.5 }}
-            animate={{ scale: 1 }}
-            className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-primary shadow-lg mb-4"
-          >
-            <ShieldCheck className="w-10 h-10 text-primary-foreground" />
-          </motion.div>
-          <h1 className="text-4xl font-black italic tracking-tighter mb-2">
-            ARENA AUTH
-          </h1>
-          <p className="text-muted-foreground font-bold tracking-widest text-xs uppercase">
-            Secure entry to the multiplayer platform
+          <h1 className="text-3xl font-bold tracking-tight mb-2">Game Arena</h1>
+          <p className="text-muted-foreground text-sm">
+            Play quick games with friends, right in your browser.
           </p>
         </div>
 
-        <Card className="border-2 shadow-2xl bg-card/50 backdrop-blur-xl">
+        <Card className="shadow-xl">
           <CardHeader>
             <div className="flex p-1 bg-secondary/50 rounded-lg border border-border mb-4">
               <Button
                 variant={isLogin ? "default" : "ghost"}
-                className="flex-1 font-black italic tracking-tight"
+                className="flex-1"
                 onClick={() => setIsLogin(true)}
               >
-                <LogIn className="w-4 h-4 mr-2" />
-                SIGN IN
+                Sign in
               </Button>
               <Button
                 variant={!isLogin ? "default" : "ghost"}
-                className="flex-1 font-black italic tracking-tight"
+                className="flex-1"
                 onClick={() => setIsLogin(false)}
               >
-                <UserPlus className="w-4 h-4 mr-2" />
-                SIGN UP
+                Sign up
               </Button>
             </div>
-            <CardTitle className="text-xl font-black italic tracking-tight text-center">
-              {isLogin ? "WELCOME BACK, CHAMPION" : "WELCOME, NEW RECRUIT!"}
+            <CardTitle className="text-xl font-semibold text-center">
+              {isLogin ? "Welcome back" : "Create your account"}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
@@ -136,45 +120,33 @@ const AuthScreen = () => {
               <div className="absolute inset-0 flex items-center">
                 <span className="w-full border-t border-border" />
               </div>
-              <div className="relative flex justify-center text-xs uppercase font-black tracking-widest">
-                <span className="bg-card px-4 text-muted-foreground">
-                  OR CONTINUE WITH
-                </span>
+              <div className="relative flex justify-center text-xs">
+                <span className="bg-card px-3 text-muted-foreground">or</span>
               </div>
             </div>
 
             <div className="flex justify-center">
-              <div className="w-full max-w-60 transform hover:scale-[1.02] transition-transform">
-                <GoogleLogin
-                  onSuccess={handleGoogleSuccess}
-                  onError={() => setError("Google Login Failed")}
-                  theme="filled_black"
-                  shape="pill"
-                  width="240"
-                />
-              </div>
+              <GoogleLogin
+                onSuccess={handleGoogleSuccess}
+                onError={() => setError("Google sign-in didn't work. Please try again.")}
+                theme="filled_black"
+                shape="pill"
+                width="240"
+              />
             </div>
-          </CardContent>
-          {error && (
-            <div className="px-6 pb-4">
-              <motion.div
-                initial={{ opacity: 0, x: -10 }}
-                animate={{ opacity: 1, x: 0 }}
-                className="p-3 rounded-lg bg-destructive/10 border border-destructive/20 text-destructive text-xs font-bold text-center"
+
+            {error && (
+              <p
+                role="alert"
+                className="p-3 rounded-lg bg-destructive/10 border border-destructive/20 text-destructive text-sm text-center"
               >
                 {error}
-              </motion.div>
-            </div>
-          )}
-          <CardFooter className="border-t border-border pt-4 flex flex-col gap-2">
-            <p className="text-xs text-muted-foreground text-center font-bold tracking-widest uppercase">
-              By entering, you agree to our{" "}
-              <span className="text-primary underline cursor-pointer">
-                Terms of Combat
-              </span>
-            </p>
-          </CardFooter>
+              </p>
+            )}
+          </CardContent>
         </Card>
+
+        <HowItsBuiltWidget />
       </motion.div>
     </div>
   );

@@ -10,7 +10,7 @@ export const snakeLadderGameHandler = {
       lastRoll: null,
       winner: null,
       readyPlayers: [],
-      logs: ["Game initialized. Waiting for players..."]
+      logs: ["Waiting for players to join."]
     };
   },
 
@@ -39,7 +39,7 @@ export const snakeLadderGameHandler = {
               winner: null,
               lastRoll: null,
               readyPlayers: [],
-              logs: ["Match started! Tactical calibration complete."]
+              logs: ["Game started. Good luck!"]
             }
         };
     }
@@ -62,7 +62,7 @@ export const snakeLadderGameHandler = {
               winner: null,
               lastRoll: null,
               readyPlayers: [],
-              logs: ["Rematch initiated. New round start."]
+              logs: ["New game started."]
             }
         };
     }
@@ -84,7 +84,7 @@ export const snakeLadderGameHandler = {
         newGameState: {
           ...gameState,
           status: "waiting-for-players",
-          logs: ["Match interrupted: Opponent abandoned. Returning to lobby..."]
+          logs: ["Your opponent left the game. Heading back to the waiting room."]
         }
       };
     }
@@ -99,14 +99,14 @@ export const snakeLadderGameHandler = {
 
     if (newPos > 100) {
       newPos = state.positions[playerUid];
-      log += ` (Need exact roll to finish)`;
+      log += ` Needs an exact roll to reach 100.`;
     } else {
       if (SNAKE_LADDER_BOARD.snakes[newPos]) {
         newPos = SNAKE_LADDER_BOARD.snakes[newPos];
-        log += ` Ouch! A snake 🐍. Down to ${newPos}.`;
+        log += ` Hit a snake and slid down to ${newPos}.`;
       } else if (SNAKE_LADDER_BOARD.ladders[newPos]) {
         newPos = SNAKE_LADDER_BOARD.ladders[newPos];
-        log += ` Yahoo! A ladder 🪜. Up to ${newPos}.`;
+        log += ` Climbed a ladder up to ${newPos}.`;
       }
     }
 
@@ -119,7 +119,7 @@ export const snakeLadderGameHandler = {
     if (newPos === 100) {
       winner = playerUid;
       newStatus = "finished";
-      log += ` WE HAVE A CHAMPION! 🎉`;
+      log += ` Reached 100 and won!`;
     }
 
     return {

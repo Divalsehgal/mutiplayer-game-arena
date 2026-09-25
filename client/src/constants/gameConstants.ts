@@ -23,3 +23,9 @@ export const SNAKE_LADDER_BOARD = {
         98: 78,
     } as Record<number, number>,
 };
+
+export const GAME_NAMES: Record<string, string> = {
+    RPS: 'Rock Paper Scissors',
+    TIC_TAC_TOE: 'Tic-Tac-Toe',
+    SNAKE_LADDER: 'Snakes & Ladders',
+};

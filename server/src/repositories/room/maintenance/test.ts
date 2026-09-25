@@ -203,5 +203,20 @@ describe('RoomMaintenanceRepository', () => {
 
 
     });
-});
 
+    it('finds a player by socket and ignores unknown sockets', () => {
+        const room = repo.createRoom({
+            hostPlayerUid: 'h1',
+            socketId: 's1',
+            name: 'P1',
+            gameType: 'RPS',
+            hostName: 'P1',
+            initialGameState: {} as RPSState
+        });
+
+        expect(repo.getPlayerBySocket('s1')?.room.id).toBe(room.id);
+        expect(repo.getPlayerBySocket('unknown')).toBeNull();
+        expect(repo.getRoom('')).toBeNull();
+        expect(repo.getRoomForPlayer('nobody')).toBeNull();
+    });
+});

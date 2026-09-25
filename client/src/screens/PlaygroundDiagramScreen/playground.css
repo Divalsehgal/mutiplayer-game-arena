@@ -1,0 +1,45 @@
+/* The app ships a single dark palette (global.css :root). The playground can
+   preview a light palette by redefining the same HSL tokens on its wrapper,
+   so every `bg-*` / `text-*` utility and the diagram CSS follow along. */
+.diagram-playground[data-theme="light"] {
+  --background: 210 40% 98%;
+  --foreground: 222 47% 11%;
+  --card: 0 0% 100%;
+  --card-foreground: 222 47% 11%;
+  --primary: 262 83% 52%;
+  --primary-foreground: 210 40% 98%;
+  --muted: 210 40% 94%;
+  --muted-foreground: 215 16% 40%;
+  --accent: 198 90% 40%;
+  --border: 214 32% 86%;
+  --input: 214 32% 86%;
+  --ring: 262 83% 52%;
+
+  /* Tailwind's --color-* tokens resolve hsl(var(--x)) once at :root, so they
+     must be re-declared here to pick up the overrides above. */
+  --color-background: hsl(var(--background));
+  --color-foreground: hsl(var(--foreground));
+  --color-card: hsl(var(--card));
+  --color-card-foreground: hsl(var(--card-foreground));
+  --color-primary: hsl(var(--primary));
+  --color-primary-foreground: hsl(var(--primary-foreground));
+  --color-muted: hsl(var(--muted));
+  --color-muted-foreground: hsl(var(--muted-foreground));
+  --color-accent: hsl(var(--accent));
+  --color-border: hsl(var(--border));
+  --color-input: hsl(var(--input));
+  --color-ring: hsl(var(--ring));
+}
+
+.diagram-playground__canvas {
+  /* 15rem ≈ page padding + back link + title block + tabs */
+  height: calc(100dvh - 15rem);
+  min-height: 480px;
+}
+
+/* Below lg the authenticated layout adds a 3.5rem fixed header. */
+@media (max-width: 1023px) {
+  .diagram-playground__canvas {
+    height: calc(100dvh - 18.5rem);
+  }
+}

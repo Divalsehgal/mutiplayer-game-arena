@@ -11,7 +11,6 @@ export function useRoomLogic(roomId: string | undefined) {
   // Auto-navigate to game arena when room status transitions to playing
   useEffect(() => {
     if (room?.status === 'playing' && roomId) {
-      console.log(`🚀 Arena Ready for Room ${roomId}. Transitioning...`);
       navigate(`/game/${roomId}`, { replace: true });
     }
   }, [room?.status, roomId, navigate]);

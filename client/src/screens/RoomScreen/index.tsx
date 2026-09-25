@@ -1,13 +1,16 @@
+import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import { Check, Copy } from 'lucide-react';
 import { Card, CardContent } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
-import { Badge } from '../../components/ui/badge';
 import { useRoomLogic } from '../../hooks/useRoomLogic';
 import { InactivityWarning } from '../../components/InactivityWarning';
 import { SessionSupersededScreen } from '../../components/SessionSupersededScreen';
+import { GAME_NAMES } from '../../constants/gameConstants';
 
 const MIN_PLAYERS_TO_START = 2;
+const COPIED_FEEDBACK_MS = 2000;
 
 export default function RoomScreen() {
   const { id: roomId } = useParams<{ id: string }>();
@@ -21,28 +24,32 @@ export default function RoomScreen() {
     handleLeave
   } = useRoomLogic(roomId);
   const navigate = useNavigate();
+  const [copied, setCopied] = useState(false);
 
   if (superseded) return <SessionSupersededScreen />;
 
   if (room === null) return (
-    <div className="flex h-screen flex-col items-center justify-center p-6 text-center bg-black overflow-hidden relative">
-      <div className="absolute inset-0 z-0 opacity-20 grayscale brightness-50">
-        <img src="https://images.unsplash.com/photo-1550745165-9bc0b252726f?auto=format&fit=crop&q=80&w=800" className="w-full h-full object-cover" alt="bg" />
-      </div>
-      <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="z-10 flex flex-col items-center">
-        <div className="text-8xl mb-6">🏚️</div>
-        <h2 className="text-4xl font-black mb-4 bg-clip-text text-transparent bg-gradient-to-r from-destructive to-destructive/50 uppercase tracking-tighter">Lobby Expired</h2>
-        <p className="text-muted-foreground mb-8 max-w-sm font-medium tracking-wide">This staging area has been abandoned. All combat assets have been purged.</p>
-        <Button variant="glow" onClick={() => navigate('/')} className="px-12 font-black uppercase tracking-widest h-14">Back to Dice & Draws</Button>
-      </motion.div>
+    <div className="flex min-h-screen flex-col items-center justify-center p-6 text-center">
+      <h2 className="text-2xl font-semibold mb-2">This room no longer exists</h2>
+      <p className="text-muted-foreground mb-6 max-w-sm">It may have closed after everyone left, or the code might be wrong.</p>
+      <Button onClick={() => navigate('/')}>Back to lobby</Button>
     </div>
   );
 
   if (!room) return (
-    <div className="flex h-screen items-center justify-center bg-black">
-      <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary shadow-[0_0_15px_rgba(6,182,212,0.5)]"></div>
+    <div className="flex min-h-screen items-center justify-center">
+      <div className="animate-spin rounded-full h-10 w-10 border-2 border-primary/30 border-t-primary"></div>
     </div>
   );
+
+  if (room.status === "playing") {
+    return (
+      <div className="flex min-h-screen flex-col items-center justify-center gap-4">
+        <div className="w-10 h-10 border-2 border-primary/30 border-t-primary rounded-full animate-spin"></div>
+        <p className="text-muted-foreground">Starting the game…</p>
+      </div>
+    );
+  }
 
   const players = room.players.filter(p => p.role === 'player');
   const spectators = room.players.filter(p => p.role === 'spectator');
@@ -50,95 +57,71 @@ export default function RoomScreen() {
   const isHost = host?.playerUid === playerUid;
   const myPlayer = room.players.find(p => p.playerUid === playerUid);
   const isSpectator = myPlayer?.role === "spectator";
+  const canStart = players.length >= MIN_PLAYERS_TO_START;
 
-  if (room.status === "playing") {
-    return (
-      <div className="flex h-screen flex-col items-center justify-center space-y-4 bg-black overflow-hidden relative">
-        <div className="absolute inset-0 z-0 opacity-10">
-          <img src="https://images.unsplash.com/photo-1550745165-9bc0b252726f?auto=format&fit=crop&q=80&w=800" className="w-full h-full object-cover" alt="bg" />
-        </div>
-        <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="flex flex-col items-center z-10">
-          <h2 className="text-4xl font-black mb-8 text-center bg-clip-text text-transparent bg-gradient-to-r from-primary to-accent uppercase tracking-tighter">Match Initializing</h2>
-          <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin mb-8 shadow-glow"></div>
-          <p className="text-muted-foreground animate-pulse font-bold tracking-widest text-xs uppercase">Calibrating Arena Sync...</p>
-        </motion.div>
-      </div>
-    );
-  }
+  const copyRoomCode = async () => {
+    try {
+      await navigator.clipboard.writeText(room.id);
+      setCopied(true);
+      setTimeout(() => setCopied(false), COPIED_FEEDBACK_MS);
+    } catch {
+      // Clipboard can be blocked (e.g. insecure context); the code is still visible to copy by hand.
+    }
+  };
 
   return (
-    <div className="relative flex flex-col items-center justify-center min-h-screen p-6 bg-black overflow-hidden">
-      {/* Cinematic Background */}
-      <div className="absolute inset-0 z-0 opacity-40">
-        <img src="https://images.unsplash.com/photo-1550745165-9bc0b252726f?auto=format&fit=crop&q=80&w=800" className="w-full h-full object-cover blur-[2px]" alt="bg" />
-        <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-black/80 to-black"></div>
-      </div>
-
+    <div className="flex flex-col items-center min-h-screen p-4 sm:p-8">
       <InactivityWarning ttlWarning={ttlWarning} onExtend={handleExtendSession} />
 
-      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="w-full max-w-5xl z-10 flex flex-col gap-8">
+      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="w-full max-w-4xl flex flex-col gap-8">
 
-        {/* Header HUD */}
-        <div className="flex justify-between items-end px-4">
-          <div className="flex flex-col">
-            <div className="flex items-center gap-2 mb-2">
-              <span className="text-accent text-xs font-black uppercase tracking-widest">{room.gameType.replace('_', ' ')} ARCHITECTURE</span>
-              <Badge variant="outline" className="text-xs border-accent/20 text-accent/60 uppercase tracking-widest px-2 py-0">
-                {room.maxPlayers} Combatants Max
-              </Badge>
-            </div>
-            <h1 className="text-5xl font-black text-white tracking-tighter uppercase leading-none">PRE-MATCH LOBBY</h1>
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-end gap-4">
+          <div>
+            <p className="text-sm text-muted-foreground mb-1">{GAME_NAMES[room.gameType] ?? room.gameType}</p>
+            <h1 className="text-3xl font-bold tracking-tight">Waiting room</h1>
           </div>
-          <div className="flex flex-col items-end">
-            <span className="text-muted-foreground text-xs font-bold uppercase tracking-widest mb-1">ROOM ID</span>
-            <span className="text-xl font-mono font-bold text-white/40 tracking-widest">{room.id}</span>
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-muted-foreground">Room code</span>
+            <span className="font-mono font-semibold text-lg">{room.id}</span>
+            <Button variant="ghost" size="icon" onClick={copyRoomCode} aria-label="Copy room code">
+              {copied ? <Check className="w-4 h-4 text-success" /> : <Copy className="w-4 h-4" />}
+            </Button>
           </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-12 gap-8">
-          {/* COMBATANTS SECTION */}
-          <div className="md:col-span-8 flex flex-col gap-6">
-            <div className="flex items-center gap-4">
-              <div className="h-px flex-1 bg-gradient-to-r from-transparent to-white/10"></div>
-              <span className="text-xs font-black text-white/30 uppercase tracking-widest">Active Combatants</span>
-              <div className="h-px flex-1 bg-gradient-to-l from-transparent to-white/10"></div>
-            </div>
+          <div className="md:col-span-8 flex flex-col gap-4">
+            <h2 className="text-sm font-medium text-muted-foreground">
+              Players ({players.length}/{room.maxPlayers})
+            </h2>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {Array.from({ length: room.maxPlayers }).map((_, idx) => {
                 const p = players[idx];
-                const emoji = idx === 0 ? '👑' : (idx === 1 ? '🔥' : (idx === 2 ? '⚡' : '🌈'));
+                const isMe = p?.playerUid === playerUid;
                 return (
-                  <Card key={idx} className={`relative overflow-hidden border-2 transition-all duration-500 bg-black/40 backdrop-blur-3xl ${p ? (p.playerUid === playerUid ? 'border-primary/50 shadow-glow' : 'border-white/5') : 'border-dashed border-white/5 opacity-40'}`}>
-                    {p && (
-                      <div className="absolute top-0 right-0 p-2">
-                        <div className={`px-2 py-0_5 rounded text-xs font-black uppercase tracking-widest ${p.status === 'online' ? 'bg-success/20 text-success' : 'bg-destructive/20 text-destructive'}`}>
-                          {p.status}
-                        </div>
-                      </div>
-                    )}
-                    <CardContent className="p-8 flex flex-col items-center">
-                      <div className={`w-24 h-24 rounded-full mb-6 border-2 flex items-center justify-center overflow-hidden shadow-inner ${p ? 'bg-white/5 border-white/10' : 'bg-transparent border-white/5 animate-pulse'}`}>
+                  <Card key={idx} className={p ? (isMe ? 'border-primary/50' : '') : 'border-dashed opacity-60'}>
+                    <CardContent className="p-6 flex items-center gap-4">
+                      <div className="w-14 h-14 rounded-full bg-secondary flex items-center justify-center overflow-hidden shrink-0">
                         {p?.avatar ? (
-                          <img src={p.avatar} alt={p.name} className="w-full h-full object-cover" />
-                        ) : (
-                          <span className="text-4xl">{p ? emoji : '❓'}</span>
-                        )}
+                          <img src={p.avatar} alt="" className="w-full h-full object-cover" />
+                        ) : p ? (
+                          <span className="text-xl font-semibold">{p.name.charAt(0).toUpperCase()}</span>
+                        ) : null}
                       </div>
-                      <div className="text-center w-full">
-                        <h3 className="text-xl font-bold text-white uppercase tracking-tight truncate px-2">
-                          {p ? p.name : "Waiting..."}
-                        </h3>
-                        <div className="flex flex-col items-center gap-1 mt-1">
-                          <span className="text-xs text-muted-foreground font-black uppercase tracking-widest">
-                            {idx === 0 ? "HOST / PLAYER 1" : `PLAYER ${idx + 1}`}
-                          </span>
-                          {p?.playerUid === playerUid && (
-                            <Badge variant="glow" className="text-xs px-2 py-0 font-black uppercase tracking-widest bg-primary/20 text-primary border-primary/30">
-                              YOU
-                            </Badge>
-                          )}
-                        </div>
+                      <div className="min-w-0">
+                        <p className="font-semibold truncate">
+                          {p ? p.name : 'Waiting for a player…'}
+                        </p>
+                        {p && (
+                          <p className="text-sm text-muted-foreground">
+                            {[
+                              idx === 0 && 'Host',
+                              isMe && 'You',
+                              p.status === 'offline' && 'Offline',
+                            ].filter(Boolean).join(' · ')}
+                          </p>
+                        )}
                       </div>
                     </CardContent>
                   </Card>
@@ -146,60 +129,54 @@ export default function RoomScreen() {
               })}
             </div>
 
-            <div className="flex flex-col items-center gap-4 mt-4">
+            <div className="mt-2">
               {isHost ? (
-                <Button variant="glow" size="lg" className="w-full h-16 text-xl font-black tracking-widest shadow-2xl"
-                  disabled={players.length < MIN_PLAYERS_TO_START} onClick={handleStartGame}>
-                  INITIALIZE MATCH
-                </Button>
+                <div className="flex flex-col gap-2">
+                  <Button size="lg" className="w-full h-12 text-base" disabled={!canStart} onClick={handleStartGame}>
+                    Start game
+                  </Button>
+                  {!canStart && (
+                    <p className="text-sm text-muted-foreground text-center">
+                      You need at least {MIN_PLAYERS_TO_START} players to start. Share the room code to invite someone.
+                    </p>
+                  )}
+                </div>
               ) : isSpectator ? (
-                <div className="w-full p-6 border border-accent/20 bg-accent/5 rounded-xl text-center">
-                  <span className="text-accent text-xs font-black uppercase tracking-widest">YOU ARE SPECTATING</span>
-                  <p className="text-muted-foreground text-xs font-medium mt-2">Promoting to active slot if a combatant drops.</p>
-                </div>
+                <p className="p-4 rounded-lg bg-secondary/50 text-sm text-center text-muted-foreground">
+                  You're watching this room. If a player leaves, you'll take their spot.
+                </p>
               ) : (
-                <div className="w-full flex flex-col items-center gap-4 p-8 bg-white/5 rounded-2xl border border-white/5">
-                  <div className="w-8 h-8 border-2 border-primary/20 border-t-primary rounded-full animate-spin" />
-                  <span className="text-muted-foreground text-xs font-black uppercase tracking-widest">Waiting for host to initialize</span>
-                </div>
+                <p className="p-4 rounded-lg bg-secondary/50 text-sm text-center text-muted-foreground">
+                  Waiting for {host?.name ?? 'the host'} to start the game…
+                </p>
               )}
             </div>
           </div>
 
-          {/* SIDEBAR: SPECTATORS & DETAILS */}
-          <div className="md:col-span-4 flex flex-col gap-6">
-            <div className="flex items-center gap-4">
-              <span className="text-xs font-black text-white/30 uppercase tracking-widest">Spectator Deck</span>
-              <div className="h-px flex-1 bg-gradient-to-l from-transparent to-white/10"></div>
-            </div>
+          <div className="md:col-span-4 flex flex-col gap-4">
+            <h2 className="text-sm font-medium text-muted-foreground">Spectators</h2>
 
-            <Card className="bg-black/20 backdrop-blur-md border-white/5">
-              <CardContent className="p-4 flex flex-col gap-2 min-h-[150px]">
+            <Card>
+              <CardContent className="p-4 flex flex-col gap-2">
                 {spectators.length === 0 ? (
-                  <div className="flex-1 flex items-center justify-center text-muted-foreground text-xs font-bold uppercase tracking-widest opacity-20">
-                    Deck Empty
-                  </div>
+                  <p className="text-sm text-muted-foreground py-4 text-center">No one is watching yet.</p>
                 ) : (
                   spectators.map((s) => (
-                    <div key={s.playerUid} className="flex items-center justify-between p-3 rounded-lg bg-white/5 border border-white/5">
-                      <span className="text-xs font-bold text-white/60">{s.name} {s.playerUid === playerUid && "(You)"}</span>
-                      <div className="w-1_5 h-1_5 rounded-full bg-accent/50"></div>
-                    </div>
+                    <p key={s.playerUid} className="text-sm py-1">
+                      {s.name}{s.playerUid === playerUid && <span className="text-muted-foreground"> (you)</span>}
+                    </p>
                   ))
                 )}
               </CardContent>
             </Card>
 
-            <div className="mt-auto flex flex-col gap-4">
-              <Button variant="outline" size="sm" onClick={handleLeave}
-                className="w-full font-black uppercase tracking-widest text-xs h-12 opacity-40 hover:opacity-100 hover:text-destructive border-white/10 hover:border-destructive/30 transition-all"
-              >
-                Retreat from Arena
-              </Button>
-              <div className="text-center px-4">
-                <p className="text-xs text-muted-foreground leading-relaxed uppercase font-medium tracking-tighter">System Version 3.4.0 • Region: Local-Edge • Stable</p>
-              </div>
-            </div>
+            <Button
+              variant="outline"
+              onClick={handleLeave}
+              className="w-full hover:text-destructive hover:border-destructive/40"
+            >
+              Leave room
+            </Button>
           </div>
         </div>
 

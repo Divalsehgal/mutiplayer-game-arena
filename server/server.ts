@@ -81,7 +81,7 @@ initSocket({
 
 // Basic health endpoint
 app.get("/", (_req, res) => {
-    res.json({ ok: true, message: "🎮 Multiplayer server online" });
+    res.json({ ok: true, message: "Multiplayer server online" });
 });
 
 // Clean idle rooms and check TTLs every 10 seconds
@@ -97,14 +97,14 @@ setInterval(() => {
 
     expired.forEach((roomId) => {
         io.to(roomId).emit("room-error", { code: "ROOM_EXPIRED", message: "Room session expired." });
-        logger.info(`⏰ Room ${roomId} expired due to TTL.`);
+        logger.info(`Room ${roomId} expired due to TTL.`);
     });
 }, 10 * 1000);
 
 setInterval(() => {
     const removals = roomStore.cleanupDisconnectedPlayers(GRACE_PERIOD_MS);
     removals.forEach(({ roomId, playerUid }: { roomId: string, playerUid: string }) => {
-        logger.info(`🧹 Grace period expired for ${playerUid} in room ${roomId}. Removing.`);
+        logger.info(`Grace period expired for ${playerUid} in room ${roomId}. Removing.`);
         const room = roomStore.getRoom(roomId);
         if (room) {
             io.to(roomId).emit("room-update", roomStore.serializeRoom(roomId));
@@ -117,7 +117,7 @@ async function startServer() {
         if (process.env.MONGO_DB_URI) {
             const dbName = process.env.DB_NAME ?? "";
             await mongoose.connect(process.env.MONGO_DB_URI + dbName);
-            logger.info("📡 Connected to MongoDB Cluster");
+            logger.info("Connected to MongoDB Cluster");
         } else {
             logger.warn(
                 "MONGO_DB_URI not set; starting server without a database connection. Set MONGO_DB_URI to enable DB."
@@ -125,10 +125,10 @@ async function startServer() {
         }
 
         server.listen(PORT, () => {
-            logger.info(`🚀 Server running at http://localhost:${PORT}`);
+            logger.info(`Server running at http://localhost:${PORT}`);
         });
     } catch (error) {
-        logger.error("❌ Database connection failed:", error);
+        logger.error("Database connection failed:", error);
         process.exit(1);
     }
 }

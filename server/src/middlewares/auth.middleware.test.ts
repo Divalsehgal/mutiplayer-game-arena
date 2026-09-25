@@ -52,4 +52,16 @@ describe('authMiddleware', () => {
         expect(res.status).toHaveBeenCalledWith(401);
         expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ message: 'Unauthorized: Invalid or expired token' }));
     });
+
+    it('should return 401 if the session no longer exists', async () => {
+        req.cookies.access_token = 'valid_token';
+        (jwt.verify as jest.Mock).mockReturnValue({ _id: 'user123', user_name: 'test' });
+        (AuthModel.findOne as jest.Mock).mockResolvedValue(null);
+
+        await authMiddleware(req, res, next);
+
+        expect(res.status).toHaveBeenCalledWith(401);
+        expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ message: 'Unauthorized: Invalid session' }));
+        expect(next).not.toHaveBeenCalled();
+    });
 });

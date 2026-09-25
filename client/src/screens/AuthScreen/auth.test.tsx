@@ -71,8 +71,8 @@ describe('AuthScreen', () => {
         render(<BrowserRouter><AuthScreen /></BrowserRouter>);
         const signUpTab = screen.getByRole('button', { name: /Sign Up/i });
         fireEvent.click(signUpTab);
-        expect(screen.getByText(/Welcome, New Recruit/i)).toBeDefined();
-        expect(screen.getByPlaceholderText(/how shall we call you/i)).toBeDefined();
+        expect(screen.getByText(/Create your account/i)).toBeDefined();
+        expect(screen.getByPlaceholderText(/what should we call you/i)).toBeDefined();
     });
 
     it('should update form data on input change', () => {
@@ -124,7 +124,7 @@ describe('AuthScreen', () => {
         const signUpTab = screen.getByRole('button', { name: /Sign Up/i });
         fireEvent.click(signUpTab);
 
-        const nameInput = screen.getByPlaceholderText(/how shall we call you/i);
+        const nameInput = screen.getByPlaceholderText(/what should we call you/i);
         const emailInput = screen.getByPlaceholderText(/you@example.com/i);
         const passwordInput = screen.getByPlaceholderText(/••••••••/i);
         
@@ -167,7 +167,7 @@ describe('AuthScreen', () => {
         const errorButton = screen.getByText('Error');
         fireEvent.click(errorButton);
         
-        expect(setError).toHaveBeenCalledWith('Google Login Failed');
+        expect(setError).toHaveBeenCalledWith("Google sign-in didn't work. Please try again.");
     });
 
     it('should show error on apiFetch failure', async () => {
@@ -195,4 +195,49 @@ describe('AuthScreen', () => {
         await waitFor(() => expect(setError).toHaveBeenCalledWith('Wrong password'));
     });
 
+    it('shows a friendly message when sign-in fails without a reason', async () => {
+        const setError = vi.fn();
+        vi.mocked(useAuthStore).mockReturnValue({ isAuthenticated: false, isLoading: false, setError, error: null, setAuth: vi.fn() } as any);
+        vi.mocked(apiFetch).mockResolvedValue({ ok: false, data: null } as any);
+
+        render(<BrowserRouter><AuthScreen /></BrowserRouter>);
+        fireEvent.submit(screen.getByPlaceholderText('you@example.com').closest('form')!);
+
+        await waitFor(() => expect(setError).toHaveBeenCalledWith("Couldn't sign you in. Check your details and try again."));
+    });
+
+    it('shows a generic message when the request throws', async () => {
+        const setError = vi.fn();
+        const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+        vi.mocked(useAuthStore).mockReturnValue({ isAuthenticated: false, isLoading: false, setError, error: null, setAuth: vi.fn() } as any);
+        vi.mocked(apiFetch).mockRejectedValue(new Error('network down'));
+
+        render(<BrowserRouter><AuthScreen /></BrowserRouter>);
+        fireEvent.submit(screen.getByPlaceholderText('you@example.com').closest('form')!);
+
+        await waitFor(() => expect(setError).toHaveBeenCalledWith('Something went wrong. Please try again.'));
+        errorSpy.mockRestore();
+    });
+
+    it('switches back to sign in from sign up', () => {
+        render(<BrowserRouter><AuthScreen /></BrowserRouter>);
+
+        fireEvent.click(screen.getByRole('button', { name: /Sign Up/i }));
+        expect(screen.getByText('Create your account')).toBeDefined();
+
+        fireEvent.click(screen.getAllByRole('button', { name: 'Sign in' })[0]);
+        expect(screen.getByText('Welcome back')).toBeDefined();
+    });
+
+    it('shows the error message returned by the store', () => {
+        vi.mocked(useAuthStore).mockReturnValue({ isAuthenticated: false, isLoading: false, setError: vi.fn(), error: 'Wrong password' } as any);
+        render(<BrowserRouter><AuthScreen /></BrowserRouter>);
+        expect(screen.getByRole('alert').textContent).toBe('Wrong password');
+    });
+
+    it('disables the submit button while signing in', () => {
+        vi.mocked(useAuthStore).mockReturnValue({ isAuthenticated: false, isLoading: true, setError: vi.fn(), error: null } as any);
+        render(<BrowserRouter><AuthScreen /></BrowserRouter>);
+        expect(screen.getByRole('button', { name: 'Please wait…' })).toBeDisabled();
+    });
 });

@@ -4,6 +4,7 @@ export interface ParticipantBase {
   role: string;
   status: "online" | "offline";
   avatar?: string;
+  isBot?: boolean;
 }
 
 export interface Player extends ParticipantBase {
@@ -92,15 +93,9 @@ export interface JoinRoomResponse {
   code?: string;
 }
 
-export type Maybe<T> = T | null | undefined;
-
 // Type guards
 export function isPlayer(p: Participant): p is Player {
   return p.role === "player";
-}
-
-export function isSpectator(p: Participant): p is Spectator {
-  return p.role === "spectator";
 }
 
 export function hasRoundCount(state: GameState): state is RPSState {

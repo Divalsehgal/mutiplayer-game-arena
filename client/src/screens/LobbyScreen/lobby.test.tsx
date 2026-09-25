@@ -25,7 +25,7 @@ vi.mock('react-router-dom', async () => {
 describe('LobbyScreen', () => {
     beforeEach(() => {
         vi.clearAllMocks();
-        window.alert = vi.fn();
+        sessionStorage.clear();
         (socket.emit as any).mockImplementation((event: string, ...args: any[]) => {
             if (event === 'get-public-rooms') {
                 const cb = args[0];
@@ -40,32 +40,32 @@ describe('LobbyScreen', () => {
                 <LobbyScreen />
             </BrowserRouter>
         );
-        expect(screen.getByText(/FORGE NEW ARENA/i)).toBeDefined();
-        expect(screen.getByText(/DIRECT ACCESS/i)).toBeDefined();
-        expect(screen.getByText(/GLOBAL PORTAL/i)).toBeDefined();
+        expect(screen.getByText(/Create a room/i)).toBeDefined();
+        expect(screen.getByText(/Join with a code/i)).toBeDefined();
+        expect(screen.getByText(/^Open rooms$/i)).toBeDefined();
     });
 
-    it('should allow entering a player handle', () => {
+    it('should allow entering a player name', () => {
         render(
             <BrowserRouter>
                 <LobbyScreen />
             </BrowserRouter>
         );
-        const nameInput = screen.getByPlaceholderText(/ENTER YOUR HANDLE/i) as HTMLInputElement;
+        const nameInput = screen.getByPlaceholderText(/Enter your name/i) as HTMLInputElement;
         fireEvent.change(nameInput, { target: { value: 'JOHN' } });
         expect(nameInput.value).toBe('JOHN');
     });
 
-    it('should alert instead of creating a room when the name is too short', () => {
+    it('should show an error instead of creating a room when the name is too short', () => {
         render(
             <BrowserRouter>
                 <LobbyScreen />
             </BrowserRouter>
         );
 
-        fireEvent.click(screen.getByText(/LAUNCH ARENA/i));
+        fireEvent.click(screen.getByRole('button', { name: /^Create room$/i }));
 
-        expect(window.alert).toHaveBeenCalledWith(expect.stringContaining('Enter a player name'));
+        expect(screen.getByRole('alert').textContent).toContain('Enter a name');
         expect(socket.emit).not.toHaveBeenCalledWith('create-room', expect.anything(), expect.anything());
     });
 
@@ -86,8 +86,8 @@ describe('LobbyScreen', () => {
             </BrowserRouter>
         );
 
-        fireEvent.change(screen.getByPlaceholderText(/ENTER YOUR HANDLE/i), { target: { value: 'JOHN' } });
-        fireEvent.click(screen.getByText(/LAUNCH ARENA/i));
+        fireEvent.change(screen.getByPlaceholderText(/Enter your name/i), { target: { value: 'JOHN' } });
+        fireEvent.click(screen.getByRole('button', { name: /^Create room$/i }));
 
         expect(socket.emit).toHaveBeenCalledWith(
             'create-room',
@@ -97,7 +97,7 @@ describe('LobbyScreen', () => {
         expect(mockedNavigate).toHaveBeenCalledWith('/room/abc123');
     });
 
-    it('should alert when room creation fails', () => {
+    it('should show an error when room creation fails', () => {
         (socket.emit as any).mockImplementation((event: string, ...args: any[]) => {
             if (event === 'get-public-rooms') {
                 args[0]?.({ ok: true, rooms: [] });
@@ -114,10 +114,10 @@ describe('LobbyScreen', () => {
             </BrowserRouter>
         );
 
-        fireEvent.change(screen.getByPlaceholderText(/ENTER YOUR HANDLE/i), { target: { value: 'JOHN' } });
-        fireEvent.click(screen.getByText(/LAUNCH ARENA/i));
+        fireEvent.change(screen.getByPlaceholderText(/Enter your name/i), { target: { value: 'JOHN' } });
+        fireEvent.click(screen.getByRole('button', { name: /^Create room$/i }));
 
-        expect(window.alert).toHaveBeenCalledWith('Creation failed');
+        expect(screen.getByRole('alert').textContent).toBe('Creation failed');
         expect(mockedNavigate).not.toHaveBeenCalled();
     });
 
@@ -138,9 +138,9 @@ describe('LobbyScreen', () => {
             </BrowserRouter>
         );
 
-        fireEvent.change(screen.getByPlaceholderText(/ENTER YOUR HANDLE/i), { target: { value: 'JOHN' } });
-        fireEvent.change(screen.getByPlaceholderText(/ROOM ID/i), { target: { value: 'xyz1' } });
-        fireEvent.click(screen.getByText(/^JOIN$/i));
+        fireEvent.change(screen.getByPlaceholderText(/Enter your name/i), { target: { value: 'JOHN' } });
+        fireEvent.change(screen.getByPlaceholderText(/Room code/i), { target: { value: 'xyz1' } });
+        fireEvent.click(screen.getByRole('button', { name: /^Join$/i }));
 
         expect(socket.emit).toHaveBeenCalledWith(
             'join-room',
@@ -150,7 +150,7 @@ describe('LobbyScreen', () => {
         expect(mockedNavigate).toHaveBeenCalledWith('/room/XYZ1');
     });
 
-    it('should alert when the room to join is not found', () => {
+    it('should show an error when the room to join is not found', () => {
         (socket.emit as any).mockImplementation((event: string, ...args: any[]) => {
             if (event === 'get-public-rooms') {
                 args[0]?.({ ok: true, rooms: [] });
@@ -167,11 +167,11 @@ describe('LobbyScreen', () => {
             </BrowserRouter>
         );
 
-        fireEvent.change(screen.getByPlaceholderText(/ENTER YOUR HANDLE/i), { target: { value: 'JOHN' } });
-        fireEvent.change(screen.getByPlaceholderText(/ROOM ID/i), { target: { value: 'nope' } });
-        fireEvent.click(screen.getByText(/^JOIN$/i));
+        fireEvent.change(screen.getByPlaceholderText(/Enter your name/i), { target: { value: 'JOHN' } });
+        fireEvent.change(screen.getByPlaceholderText(/Room code/i), { target: { value: 'nope' } });
+        fireEvent.click(screen.getByRole('button', { name: /^Join$/i }));
 
-        expect(window.alert).toHaveBeenCalledWith('Room not found');
+        expect(screen.getByRole('alert').textContent).toBe('Room not found');
     });
 
     it('should render public rooms fetched on mount and join one on click', () => {
@@ -196,8 +196,8 @@ describe('LobbyScreen', () => {
 
         expect(screen.getAllByText(/room1/i).length).toBeGreaterThan(0);
 
-        fireEvent.change(screen.getByPlaceholderText(/ENTER YOUR HANDLE/i), { target: { value: 'JOHN' } });
-        fireEvent.click(screen.getByText(/JOIN ARENA/i));
+        fireEvent.change(screen.getByPlaceholderText(/Enter your name/i), { target: { value: 'JOHN' } });
+        fireEvent.click(screen.getAllByRole('button', { name: /^Join$/i }).at(-1)!);
 
         expect(socket.emit).toHaveBeenCalledWith(
             'join-room',

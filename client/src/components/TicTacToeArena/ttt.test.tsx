@@ -26,13 +26,13 @@ describe('TicTacToeArena', () => {
 
     it('should render 9 grid cells', () => {
         render(<TicTacToeArena {...defaultProps} />);
-        const cells = screen.getAllByText(/N-0/i);
+        const cells = screen.getAllByRole('button', { name: /^Square \d/ });
         expect(cells.length).toBe(9);
     });
 
     it('should call handleTicTacToeMove when empty cell is clicked during player turn', () => {
         render(<TicTacToeArena {...defaultProps} />);
-        const firstCell = screen.getByText('N-00').parentElement;
+        const firstCell = screen.getByRole('button', { name: 'Square 1, empty' });
         fireEvent.click(firstCell!);
         expect(defaultProps.handleTicTacToeMove).toHaveBeenCalledWith(0);
     });
@@ -70,8 +70,8 @@ describe('TicTacToeArena', () => {
             } 
         };
         render(<TicTacToeArena {...props} />);
-        expect(screen.getByText(/Grid Dominance/i)).toBeDefined();
-        expect(screen.getByText(/Alpha ASCENDED/i)).toBeDefined();
+        expect(screen.getByText(/You win!/i)).toBeDefined();
+        expect(screen.getByRole('button', { name: /Play again/i })).toBeDefined();
     });
 
     it('should log error if board is missing', () => {
@@ -83,5 +83,50 @@ describe('TicTacToeArena', () => {
         render(<TicTacToeArena {...props} />);
         expect(consoleSpy).toHaveBeenCalledWith("TicTacToe Error: Board is missing from gameState", props.gameState);
         consoleSpy.mockRestore();
+    });
+
+    it("shows whose turn it is when it isn't yours, and ignores clicks", () => {
+        const handleTicTacToeMove = vi.fn();
+        render(<TicTacToeArena {...defaultProps} handleTicTacToeMove={handleTicTacToeMove} gameState={{ board: Array(9).fill(null), currentTurn: 'u2' }} />);
+
+        expect(screen.getByText("Bravo's turn")).toBeDefined();
+        fireEvent.click(screen.getByRole('button', { name: 'Square 1, empty' }));
+        expect(handleTicTacToeMove).not.toHaveBeenCalled();
+    });
+
+    it('shows a waiting message before anyone has a turn', () => {
+        render(<TicTacToeArena {...defaultProps} gameState={{ board: Array(9).fill(null), currentTurn: null }} />);
+        expect(screen.getByText('Waiting…')).toBeDefined();
+    });
+
+    it('announces a draw and offers a rematch', () => {
+        const handleNextRound = vi.fn();
+        render(<TicTacToeArena {...defaultProps} handleNextRound={handleNextRound} gameState={{ board: ['X', 'O', 'X', 'X', 'O', 'O', 'O', 'X', 'X'], isDraw: true, readyPlayers: [] }} />);
+
+        expect(screen.getByText("It's a draw")).toBeDefined();
+        expect(screen.getByText('0 of 2 ready')).toBeDefined();
+        fireEvent.click(screen.getByRole('button', { name: 'Play again' }));
+        expect(handleNextRound).toHaveBeenCalled();
+    });
+
+    it('names the winner when it is someone else, such as the computer', () => {
+        render(<TicTacToeArena {...defaultProps} gameState={{ board: Array(9).fill(null), winner: 'u2', readyPlayers: ['u1'] }} />);
+
+        expect(screen.getByText('Bravo wins')).toBeDefined();
+        expect(screen.getByRole('button', { name: /Waiting for opponent/ })).toBeDisabled();
+    });
+
+    it('shows spectators a waiting message instead of a rematch button', () => {
+        render(<TicTacToeArena {...defaultProps} isPlayer={false} gameState={{ board: Array(9).fill(null), winner: 'u1' }} />);
+
+        expect(screen.getByText('Alpha wins')).toBeDefined();
+        expect(screen.getByText(/Waiting for the players/)).toBeDefined();
+    });
+
+    it('labels filled squares for screen readers', () => {
+        render(<TicTacToeArena {...defaultProps} gameState={{ board: ['X', null, 'O', null, null, null, null, null, null], currentTurn: 'u1' }} />);
+
+        expect(screen.getByRole('button', { name: 'Square 1, X' })).toBeDisabled();
+        expect(screen.getByRole('button', { name: 'Square 3, O' })).toBeDisabled();
     });
 });

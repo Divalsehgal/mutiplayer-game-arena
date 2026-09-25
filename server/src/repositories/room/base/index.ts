@@ -39,6 +39,11 @@ export class RoomBaseRepository {
         return player ? { room, player } : null;
     }
 
+    // A room with only the computer left in it is effectively empty.
+    hasHumanPlayers(room: Room) {
+        return room.players.some((p) => !p.isBot);
+    }
+
     countActivePlayers(room: Room) {
         return room.players.filter((p) => p.role === "player").length;
     }

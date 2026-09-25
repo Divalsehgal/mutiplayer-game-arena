@@ -165,5 +165,46 @@ describe('RoomActionRepository', () => {
         repo.leaveRoom({ roomId: room.id, playerUid: 'p2' });
         expect(room.players).toHaveLength(1);
     });
-});
 
+    describe('computer player', () => {
+        const createHumanRoom = () => repo.createRoom({
+            hostPlayerUid: 'h1',
+            socketId: 's1',
+            name: 'P1',
+            gameType: 'RPS',
+            hostName: 'P1',
+            initialGameState: {} as RPSState
+        });
+
+        it('adds a seated computer player without a socket', () => {
+            const room = createHumanRoom();
+            const bot = repo.addBotPlayer(room.id, 'Computer');
+
+            expect(bot).toMatchObject({ playerUid: `bot-${room.id}`, name: 'Computer', role: 'player', isBot: true, socketId: null });
+            expect(room.players).toHaveLength(2);
+            expect(repo.hasHumanPlayers(room)).toBe(true);
+        });
+
+        it('throws when adding a computer to a missing room', () => {
+            expect(() => repo.addBotPlayer('nope', 'Computer')).toThrow('Room does not exist');
+        });
+
+        it('closes the room when the last human leaves, even if the computer is still seated', () => {
+            const room = createHumanRoom();
+            repo.addBotPlayer(room.id, 'Computer');
+
+            const res = repo.leaveRoom({ roomId: room.id, playerUid: 'h1' });
+
+            expect(res.roomDeleted).toBe(true);
+            expect(repo.getRoom(room.id)).toBeNull();
+        });
+
+        it('makes later joiners spectators because the computer holds the second seat', () => {
+            const room = createHumanRoom();
+            repo.addBotPlayer(room.id, 'Computer');
+
+            const join = repo.joinRoom({ roomId: room.id, playerUid: 'p3', socketId: 's3', name: 'P3' });
+            expect(join.role).toBe('spectator');
+        });
+    });
+});

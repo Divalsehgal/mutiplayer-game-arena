@@ -81,7 +81,7 @@ export const useAuthStore = create<AuthState>((set) => ({
           user: null,
           accessToken: null,
           isAuthenticated: false,
-          error: data?.message || 'Google login failed',
+          error: data?.message || "Google sign-in didn't work. Please try again.",
           isLoading: false
         });
       }
@@ -90,7 +90,8 @@ export const useAuthStore = create<AuthState>((set) => ({
         user: null,
         accessToken: null,
         isAuthenticated: false,
-        error: err instanceof Error ? err.message : 'Google login failed', 
+        // fetch() rejects only when the server can't be reached at all.
+        error: "Can't reach the server right now. Please try again in a moment.",
         isLoading: false 
       });
     }

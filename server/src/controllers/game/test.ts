@@ -60,4 +60,50 @@ describe('GameController', () => {
         controller.handleMove(mockSocket, { roomId: 'r1', move: 'Rock' });
         expect(mockIo.to).not.toHaveBeenCalled();
     });
+
+    describe('with a computer opponent', () => {
+        let mockBotRunner: any;
+
+        beforeEach(() => {
+            mockBotRunner = { schedule: jest.fn() };
+            controller = new GameController(mockIo, mockGameService, mockRepo, mockBotRunner);
+            mockRepo.getRoom.mockReturnValue({ players: [{ socketId: 's1', playerUid: 'u1' }] });
+        });
+
+        it('gives the computer a turn after a move', () => {
+            mockGameService.handleMove.mockReturnValue({ gameState: {} });
+
+            controller.handleMove(mockSocket, { roomId: 'r1', move: 'Rock' });
+
+            expect(mockBotRunner.schedule).toHaveBeenCalledWith('r1');
+        });
+
+        it('gives the computer a turn after a ready', () => {
+            mockGameService.handleReady.mockReturnValue({ gameState: {} });
+
+            controller.handleReady(mockSocket, { roomId: 'r1' });
+
+            expect(mockBotRunner.schedule).toHaveBeenCalledWith('r1');
+        });
+
+        it('does not wake the computer when a move is rejected', () => {
+            mockGameService.handleMove.mockReturnValue(null);
+
+            controller.handleMove(mockSocket, { roomId: 'r1', move: 'Rock' });
+
+            expect(mockBotRunner.schedule).not.toHaveBeenCalled();
+        });
+    });
+
+    it('skips players without a socket, such as the computer, when broadcasting', () => {
+        mockGameService.handleMove.mockReturnValue({ gameState: {} });
+        mockRepo.getRoom.mockReturnValue({
+            players: [{ socketId: 's1', playerUid: 'u1' }, { socketId: null, playerUid: 'bot-r1', isBot: true }]
+        });
+
+        controller.handleMove(mockSocket, { roomId: 'r1', move: 'Rock' });
+
+        expect(mockIo.to).toHaveBeenCalledTimes(1);
+        expect(mockGameService.getPublicRoomState).not.toHaveBeenCalledWith('r1', 'bot-r1');
+    });
 });

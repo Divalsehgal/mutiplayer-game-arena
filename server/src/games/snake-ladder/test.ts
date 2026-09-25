@@ -87,7 +87,7 @@ describe('SnakeLadder Game Handler', () => {
         const result = snakeLadderGameHandler.handleMove({ room, gameState: state, playerUid: 'u1' });
         const newState = result.newGameState as any;
         expect(newState.status).toBe('waiting-for-players');
-        expect(newState.logs[0]).toContain('Opponent abandoned');
+        expect(newState.logs[0]).toContain('opponent left');
     });
 
     it('should ignore move if not player\'s turn or game finished', () => {
@@ -123,7 +123,7 @@ describe('SnakeLadder Game Handler', () => {
         const result = snakeLadderGameHandler.handleMove({ room, gameState: state, playerUid: 'u1' });
         const newState = result.newGameState as any;
         expect(newState.positions['u1']).toBe(98);
-        expect(newState.logs[0]).toContain('Need exact roll');
+        expect(newState.logs[0]).toContain('exact roll');
         spy.mockRestore();
     });
 

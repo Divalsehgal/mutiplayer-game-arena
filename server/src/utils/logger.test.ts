@@ -14,4 +14,11 @@ describe('Logger', () => {
         expect(errorSpy).toHaveBeenCalledWith('[ERROR]', 'test error');
         errorSpy.mockRestore();
     });
+
+    it('should call console.warn on warn', () => {
+        const warnSpy = jest.spyOn(console, 'warn').mockImplementation();
+        logger.warn('test warning');
+        expect(warnSpy).toHaveBeenCalledWith('[WARN]', 'test warning');
+        warnSpy.mockRestore();
+    });
 });

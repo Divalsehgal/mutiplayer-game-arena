@@ -161,4 +161,34 @@ describe('GoogleAuthController', () => {
         await googleAuthHandler(mockReq, mockRes);
         expect(UserModel.create).toHaveBeenCalledWith(expect.objectContaining({ user_name: expect.stringMatching(/Test_/i) }));
     });
+
+    it('should fail cleanly when Google OAuth credentials are not configured', async () => {
+        const saved = { id: process.env.CLIENT_ID, secret: process.env.CLIENT_SECRET };
+        delete process.env.CLIENT_ID;
+        delete process.env.CLIENT_SECRET;
+        delete process.env.GOOGLE_CLIENT_ID;
+        delete process.env.GOOGLE_CLIENT_SECRET;
+        mockReq.body.idToken = 'valid_token';
+
+        await googleAuthHandler(mockReq, mockRes);
+
+        expect(mockRes.status).toHaveBeenCalledWith(401);
+        expect(mockRes.json).toHaveBeenCalledWith(expect.objectContaining({ success: false }));
+
+        process.env.CLIENT_ID = saved.id;
+        process.env.CLIENT_SECRET = saved.secret;
+    });
+
+    it('logs the real reason when Google rejects the token', async () => {
+        const errorSpy = jest.spyOn(console, 'error').mockImplementation();
+        const mockVerify = (new OAuth2Client()).verifyIdToken as jest.Mock;
+        mockVerify.mockRejectedValueOnce(new Error('Wrong recipient, payload audience != requiredAudience'));
+        mockReq.body.idToken = 'token_for_other_client';
+
+        await googleAuthHandler(mockReq, mockRes);
+
+        expect(mockRes.status).toHaveBeenCalledWith(401);
+        expect(errorSpy).toHaveBeenCalledWith('[ERROR]', 'Google sign-in failed:', 'Wrong recipient, payload audience != requiredAudience');
+        errorSpy.mockRestore();
+    });
 });

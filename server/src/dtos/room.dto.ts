@@ -4,6 +4,7 @@ export interface CreateRoomRequest {
     hostName: string;
     gameType: string;
     isPublic?: boolean;
+    vsComputer?: boolean;
 }
 
 export interface JoinRoomRequest {

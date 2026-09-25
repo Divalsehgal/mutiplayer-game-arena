@@ -28,47 +28,50 @@ export const EmailAuthForm: React.FC<EmailAuthFormProps> = ({
     <form onSubmit={onSubmit} className="space-y-4">
       {!isLogin && (
         <div className="space-y-2">
-          <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground ml-1">USERNAME</label>
+          <label htmlFor="user_name" className="text-sm font-medium">Username</label>
           <Input
+            id="user_name"
             name="user_name"
-            placeholder="HOW SHALL WE CALL YOU?"
+            placeholder="What should we call you?"
             value={formData.user_name}
             onChange={onChange}
             required
-            className="h-12 border-2 focus-visible:ring-primary font-bold"
+            className="h-11"
           />
         </div>
       )}
       <div className="space-y-2">
-        <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground ml-1">EMAIL ADDRESS</label>
+        <label htmlFor="email" className="text-sm font-medium">Email</label>
         <Input
+          id="email"
           name="email"
           type="email"
-          placeholder="YOU@EXAMPLE.COM"
+          placeholder="you@example.com"
           value={formData.email}
           onChange={onChange}
           required
-          className="h-12 border-2 focus-visible:ring-primary font-bold"
+          className="h-11"
         />
       </div>
       <div className="space-y-2">
-        <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground ml-1">PASSWORD</label>
+        <label htmlFor="password" className="text-sm font-medium">Password</label>
         <Input
+          id="password"
           name="password"
           type="password"
           placeholder="••••••••"
           value={formData.password}
           onChange={onChange}
           required
-          className="h-12 border-2 focus-visible:ring-primary font-bold"
+          className="h-11"
         />
       </div>
       <Button
         type="submit"
         disabled={isLoading}
-        className="w-full h-14 text-lg font-black italic tracking-widest mt-4 shadow-lg"
+        className="w-full h-11 mt-2"
       >
-        {isLoading ? 'PROCESSING...' : isLogin ? 'ENTER ARENA' : 'CREATE ACCOUNT'}
+        {isLoading ? 'Please wait…' : isLogin ? 'Sign in' : 'Create account'}
       </Button>
     </form>
   );

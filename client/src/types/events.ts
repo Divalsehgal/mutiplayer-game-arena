@@ -18,6 +18,7 @@ export interface ClientToServerEvents {
     hostName: string;
     gameType: string;
     isPublic: boolean;
+    vsComputer?: boolean;
     maxPlayers?: number;
     allowSpectators?: boolean;
   }, cb?: (res: JoinRoomResponse & { roomId?: string }) => void) => void;

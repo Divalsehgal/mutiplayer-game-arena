@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { lazy, Suspense, useEffect, useState } from "react";
 import {
   BrowserRouter,
   Routes,
@@ -14,9 +14,16 @@ import ProtectedRoute from "./components/ProtectedRoute";
 import { useSocket } from "./hooks/useSocket";
 import { GoogleOAuthProvider } from "@react-oauth/google";
 import { useAuthStore } from "./store/auth";
-import { Toaster } from "./components/ui/toaster";
+import Sidebar from "./components/Sidebar";
+import { Menu, X } from "lucide-react";
+import { Button } from "./components/ui/button";
 
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+
+// Lazy so React Flow is only downloaded when the playground is opened.
+const PlaygroundDiagramScreen = lazy(
+  () => import("./screens/PlaygroundDiagramScreen"),
+);
 
 const ConnectionBanner = ({
   isConnected,
@@ -32,18 +39,13 @@ const ConnectionBanner = ({
 
   if (isAuthenticated && !isConnected && isGameRoute) {
     return (
-      <div className="fixed top-0 left-0 w-full bg-destructive text-destructive-foreground py-1 text-center text-xs font-bold z-50">
-        CONNECTION INTERRUPTED - RETRYING...
+      <div className="fixed top-0 left-0 w-full bg-destructive text-destructive-foreground py-1 text-center text-xs font-medium z-50">
+        Connection lost. Reconnecting…
       </div>
     );
   }
   return null;
 };
-
-import { useState } from "react";
-import Sidebar from "./components/Sidebar";
-import { Menu, X } from "lucide-react";
-import { Button } from "./components/ui/button";
 
 const AppLayout = ({ children }: { children: React.ReactNode }) => {
   const { isAuthenticated } = useAuthStore();
@@ -84,9 +86,7 @@ const AppLayout = ({ children }: { children: React.ReactNode }) => {
                 <Menu className="w-6 h-6" />
               )}
             </Button>
-            <span className="ml-3 font-black tracking-tighter text-xl italic">
-              ARENA
-            </span>
+            <span className="ml-3 font-bold text-lg">Game Arena</span>
           </header>
         </>
       )}
@@ -161,13 +161,18 @@ function App() {
                   </ProtectedRoute>
                 }
               />
-              <Route path="/games" element={<Navigate replace to="/" />} />
-              <Route path="/settings" element={<Navigate replace to="/" />} />
+              <Route
+                path="/playground/diagram"
+                element={
+                  <Suspense fallback={null}>
+                    <PlaygroundDiagramScreen />
+                  </Suspense>
+                }
+              />
               <Route path="*" element={<Navigate replace to="/" />} />
             </Routes>
           </AppLayout>
         </BrowserRouter>
-        <Toaster />
       </div>
     </GoogleOAuthProvider>
   );

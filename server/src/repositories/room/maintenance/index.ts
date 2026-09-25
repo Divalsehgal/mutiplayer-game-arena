@@ -73,7 +73,7 @@ export class RoomMaintenanceRepository extends RoomActionRepository {
 
             if (room.players.length !== initialCount) {
                 room.updatedAt = t;
-                if (room.players.length === 0) {
+                if (!this.hasHumanPlayers(room)) {
                     this.rooms.delete(roomId);
                 } else {
                     this.promoteSpectators(room);

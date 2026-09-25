@@ -110,4 +110,20 @@ describe('apiFetch', () => {
         // causing an infinite reload loop on the login page — this must not happen.
         await expect(apiFetch('/test')).rejects.toThrow('Session expired');
     });
+
+    it.each(['/auth/google', '/auth/signin', '/auth/signup'])(
+        'returns a 401 from %s as-is instead of treating it as an expired session',
+        async (endpoint) => {
+            (fetch as any).mockReset().mockResolvedValueOnce({
+                status: 401,
+                ok: false,
+                json: async () => ({ success: false, message: 'Invalid Credentials' }),
+            });
+
+            const res = await apiFetch(endpoint, { method: 'POST', body: '{}' });
+
+            expect(res).toEqual({ ok: false, status: 401, data: { success: false, message: 'Invalid Credentials' } });
+            expect(fetch).toHaveBeenCalledTimes(1);
+        }
+    );
 });

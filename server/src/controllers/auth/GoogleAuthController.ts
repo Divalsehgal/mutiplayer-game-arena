@@ -6,6 +6,7 @@ import { AuthService } from "../../services/auth";
 import { setAuthCookies } from "./helpers";
 import AuthModel from "../../models/auth";
 import UserModel from "../../models/user";
+import { logger } from "../../utils/logger";
 
 let googleClient: OAuth2Client | null = null;
 
@@ -99,6 +100,8 @@ export const googleAuthHandler = async (req: Request, res: Response) => {
             }
         });
     } catch (err) {
+        // The client only gets a generic message, so keep the real reason in the server log.
+        logger.error("Google sign-in failed:", err instanceof Error ? err.message : err);
         res.status(401).json({
             success: false,
             message: "Google authentication failed"

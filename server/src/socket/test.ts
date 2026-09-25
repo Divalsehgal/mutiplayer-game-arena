@@ -69,7 +69,7 @@ describe('SocketInit', () => {
 
             middleware(mockSocket, next);
             
-            expect(mockSocket.data.playerUid).toBe('anon1');
+            expect(mockSocket.data.playerUid).toBe('guest:anon1');
             expect(next).toHaveBeenCalledWith();
         });
 

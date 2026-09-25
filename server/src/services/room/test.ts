@@ -116,4 +116,37 @@ describe('RoomService', () => {
             expect(mockRegistry.RPS.getInitialState).not.toHaveBeenCalled();
         });
     });
+
+    describe('against the computer', () => {
+        beforeEach(() => {
+            mockRepo.addBotPlayer = jest.fn();
+            mockRegistry.SNAKE_LADDER = { getInitialState: jest.fn().mockReturnValue({}) };
+        });
+
+        it('adds the computer as the second player and keeps the room private', () => {
+            mockRepo.createRoom.mockReturnValue({ id: 'r1', gameType: 'RPS', isPublic: false });
+
+            service.createRoom({ playerUid: 'u1', socketId: 's1', name: 'N', gameType: 'RPS', isPublic: true, vsComputer: true });
+
+            expect(mockRepo.createRoom).toHaveBeenCalledWith(expect.objectContaining({ isPublic: false, maxPlayers: 2 }));
+            expect(mockRepo.addBotPlayer).toHaveBeenCalledWith('r1', 'Computer');
+        });
+
+        it('limits Snakes & Ladders to two players', () => {
+            mockRepo.createRoom.mockReturnValue({ id: 'r1', gameType: 'SNAKE_LADDER', isPublic: false });
+
+            service.createRoom({ playerUid: 'u1', socketId: 's1', name: 'N', gameType: 'SNAKE_LADDER', vsComputer: true });
+
+            expect(mockRepo.createRoom).toHaveBeenCalledWith(expect.objectContaining({ maxPlayers: 2 }));
+        });
+
+        it('keeps four seats for Snakes & Ladders with other players', () => {
+            mockRepo.createRoom.mockReturnValue({ id: 'r1', gameType: 'SNAKE_LADDER', isPublic: true });
+
+            service.createRoom({ playerUid: 'u1', socketId: 's1', name: 'N', gameType: 'SNAKE_LADDER', isPublic: true });
+
+            expect(mockRepo.createRoom).toHaveBeenCalledWith(expect.objectContaining({ maxPlayers: 4, isPublic: true }));
+            expect(mockRepo.addBotPlayer).not.toHaveBeenCalled();
+        });
+    });
 });

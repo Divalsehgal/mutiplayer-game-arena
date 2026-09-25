@@ -58,6 +58,24 @@ export class RoomActionRepository extends RoomBaseRepository {
         return room;
     }
 
+    addBotPlayer(roomId: string, name: string): Player {
+        const room = this.getRoom(roomId);
+        if (!room) throw createRoomError("ROOM_NOT_FOUND", "Room does not exist");
+
+        const bot: Player = {
+            playerUid: `bot-${room.id}`,
+            socketId: null,
+            name,
+            role: "player",
+            status: "online",
+            score: 0,
+            isBot: true,
+        };
+        room.players.push(bot);
+        room.updatedAt = this.now();
+        return bot;
+    }
+
     joinRoom(data: { roomId: string, playerUid: string, socketId: string | null, name: string, avatar?: string }) {
         const room = this.getRoom(data.roomId);
         if (!room) throw createRoomError("ROOM_NOT_FOUND", "Room does not exist");
@@ -114,7 +132,7 @@ export class RoomActionRepository extends RoomBaseRepository {
         room.players = room.players.filter((p) => p.playerUid !== data.playerUid);
         room.updatedAt = this.now();
 
-        if (room.players.length === 0) {
+        if (!this.hasHumanPlayers(room)) {
             this.rooms.delete(room.id);
             return { roomId: room.id, roomDeleted: true };
         }

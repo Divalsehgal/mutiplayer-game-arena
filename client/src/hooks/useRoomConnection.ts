@@ -5,7 +5,6 @@ import { useRoomStore } from '../store/room';
 import { useSocket } from './useSocket';
 import { useSocketEvent } from './useSocketEvent';
 import { useAuthStore } from '../store/auth';
-import { toast } from './use-toast';
 import { RoomState, JoinRoomResponse } from '../types';
 
 /**
@@ -87,10 +86,6 @@ export function useRoomConnection(roomId: string | undefined) {
   // longer the live session, so stop treating its (now stale) room state as current.
   useSocketEvent("session-taken-over", () => {
     setSuperseded(true);
-    toast({
-      title: "Session moved",
-      description: "You joined this room from another tab or device.",
-    });
   });
 
   const handleExtendSession = () => {

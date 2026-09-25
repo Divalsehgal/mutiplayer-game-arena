@@ -9,6 +9,9 @@ interface RequestOptions extends RequestInit {
 
 let refreshPromise: Promise<boolean> | null = null;
 
+// A 401 from these means "wrong credentials", not "session expired", so don't try to refresh.
+const NO_REFRESH_ENDPOINTS = ['auth/refresh', 'auth/logout', 'auth/signin', 'auth/signup', 'auth/google'];
+
 async function refreshSession() {
   if (!refreshPromise) {
     refreshPromise = fetch(`${SERVER_URL}/auth/refresh`, {
@@ -49,8 +52,7 @@ export async function apiFetch(endpoint: string, options: RequestOptions = {}): 
 
   const shouldAttemptRefresh = response.status === 401
     && !options.retry
-    && requestEndpoint !== 'auth/refresh'
-    && requestEndpoint !== 'auth/logout';
+    && !NO_REFRESH_ENDPOINTS.includes(requestEndpoint);
 
   if (shouldAttemptRefresh) {
     try {

@@ -57,6 +57,14 @@ describe('Auth Store', () => {
       expect(state.isLoading).toBe(false);
     });
 
+    it('should show a friendly message when Google sign-in is rejected without a reason', async () => {
+      vi.mocked(apiFetch).mockResolvedValueOnce({ ok: false, status: 401, data: null });
+
+      await useAuthStore.getState().googleLogin('badToken');
+
+      expect(useAuthStore.getState().error).toBe("Google sign-in didn't work. Please try again.");
+    });
+
     it('should handle login failure from API', async () => {
       vi.mocked(apiFetch).mockResolvedValueOnce({
         ok: true,
@@ -77,7 +85,7 @@ describe('Auth Store', () => {
       await useAuthStore.getState().googleLogin('idToken123');
 
       const state = useAuthStore.getState();
-      expect(state.error).toBe('Network failure');
+      expect(state.error).toBe("Can't reach the server right now. Please try again in a moment.");
       expect(state.isLoading).toBe(false);
     });
     
@@ -87,7 +95,7 @@ describe('Auth Store', () => {
       await useAuthStore.getState().googleLogin('idToken123');
 
       const state = useAuthStore.getState();
-      expect(state.error).toBe('Google login failed');
+      expect(state.error).toBe("Can't reach the server right now. Please try again in a moment.");
       expect(state.isLoading).toBe(false);
     });
   });

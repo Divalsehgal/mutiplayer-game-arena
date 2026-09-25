@@ -55,11 +55,10 @@ describe('SnakeLadderArena', () => {
             gameState: { ...defaultProps.gameState, winner: 'u1' } 
         };
         render(<SnakeLadderArena {...props} />);
-        expect(screen.getByText(/Victory Protocol/i)).toBeDefined();
-        expect(screen.getByText(/Alpha ASCENDED/i)).toBeDefined();
+        expect(screen.getByText(/You win!/i)).toBeDefined();
         
         // Test handleNextRound
-        const rematchButton = screen.getByRole('button', { name: /REMATCH/i });
+        const rematchButton = screen.getByRole('button', { name: /Play again/i });
         fireEvent.click(rematchButton);
         expect(defaultProps.handleNextRound).toHaveBeenCalled();
     });
@@ -80,7 +79,7 @@ describe('SnakeLadderArena', () => {
             gameState: { ...defaultProps.gameState, winner: 'u1' } 
         };
         render(<SnakeLadderArena {...props} />);
-        expect(screen.getByText(/Waiting for next cycle/i)).toBeDefined();
+        expect(screen.getByText(/Waiting for the players/i)).toBeDefined();
     });
 
     it('should handle undefined logs and positions', () => {
@@ -90,5 +89,44 @@ describe('SnakeLadderArena', () => {
         };
         render(<SnakeLadderArena {...props} />);
         expect(screen.getByRole('button', { name: /ROLL/i })).toBeDefined();
+    });
+
+    it('shows who is up next when watching', () => {
+        render(<SnakeLadderArena {...defaultProps} isPlayer={false} gameState={{ ...defaultProps.gameState, currentTurn: 'u2' }} />);
+
+        expect(screen.getByText("Bravo's turn")).toBeDefined();
+        expect(screen.queryByRole('button')).toBeNull();
+    });
+
+    it('names the other player while waiting for their roll', () => {
+        render(<SnakeLadderArena {...defaultProps} gameState={{ ...defaultProps.gameState, currentTurn: 'u2' }} />);
+        expect(screen.getByRole('button', { name: 'Waiting for Bravo…' })).toBeDisabled();
+    });
+
+    it('shows the last roll and each player\'s square', () => {
+        render(<SnakeLadderArena {...defaultProps} gameState={{ ...defaultProps.gameState, lastRoll: 5, positions: { u1: 14, u2: 6 } }} />);
+
+        expect(screen.getByText('Last roll').nextElementSibling?.textContent).toBe('5');
+        expect(screen.getByText('You · 14')).toBeDefined();
+        expect(screen.getByText('Bravo · 6')).toBeDefined();
+    });
+
+    it('marks snakes and ladders on the board with where they lead', () => {
+        render(<SnakeLadderArena {...defaultProps} />);
+
+        expect(screen.getByTitle('Ladder: climb to 38')).toBeDefined();
+        expect(screen.getByTitle('Snake: slide down to 6')).toBeDefined();
+        expect(screen.getByText('Ladder')).toBeDefined();
+        expect(screen.getByText('Snake')).toBeDefined();
+    });
+
+    it('names the winner when it is someone else, such as the computer', () => {
+        render(<SnakeLadderArena {...defaultProps} gameState={{ ...defaultProps.gameState, winner: 'u2' }} />);
+        expect(screen.getByText('Bravo wins')).toBeDefined();
+    });
+
+    it('hides the move log when there is nothing in it', () => {
+        render(<SnakeLadderArena {...defaultProps} gameState={{ ...defaultProps.gameState, logs: [] }} />);
+        expect(screen.queryByText(/Game started/)).toBeNull();
     });
 });

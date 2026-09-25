@@ -22,11 +22,12 @@ describe('RPSArena', () => {
     };
 
     // ----- basic render -----
-    it('should render game options for player', () => {
+    it('should render the three move buttons for a player', () => {
         render(<RPSArena {...defaultProps} />);
-        const buttons = screen.getAllByRole('button');
-        expect(buttons.length).toBeGreaterThanOrEqual(3);
-        expect(screen.getByText('🪨')).toBeDefined();
+        expect(screen.getByRole('button', { name: /Rock/ })).toBeDefined();
+        expect(screen.getByRole('button', { name: /Paper/ })).toBeDefined();
+        expect(screen.getByRole('button', { name: /Scissors/ })).toBeDefined();
+        expect(screen.getByText('Pick your move')).toBeDefined();
     });
 
     // ----- move buttons -----
@@ -34,79 +35,59 @@ describe('RPSArena', () => {
         const handleRPSMove = vi.fn();
         render(<RPSArena {...defaultProps} handleRPSMove={handleRPSMove} />);
 
-        fireEvent.click(screen.getByRole('button', { name: '🪨' }));
+        fireEvent.click(screen.getByRole('button', { name: /Rock/ }));
         expect(handleRPSMove).toHaveBeenCalledWith('Rock');
 
-        fireEvent.click(screen.getByRole('button', { name: '📄' }));
+        fireEvent.click(screen.getByRole('button', { name: /Paper/ }));
         expect(handleRPSMove).toHaveBeenCalledWith('Paper');
 
-        fireEvent.click(screen.getByRole('button', { name: '✂️' }));
+        fireEvent.click(screen.getByRole('button', { name: /Scissors/ }));
         expect(handleRPSMove).toHaveBeenCalledWith('Scissors');
     });
 
-    it('should disable move buttons if player has already moved', () => {
+    it('should disable move buttons and show locked in once the player has moved', () => {
         render(<RPSArena {...defaultProps} gameState={{ playerChoices: { u1: 'Rock' }, readyPlayers: [] }} />);
-        const rockBtn = screen.getByRole('button', { name: /🪨/i });
-        expect(rockBtn).toBeDisabled();
+        expect(screen.getByRole('button', { name: /Rock/ })).toBeDisabled();
+        expect(screen.getByText('Locked in')).toBeDefined();
     });
 
     // ----- myMove icon variants -----
-    it('should show 📄 icon for player myMove=Paper', () => {
+    it('should show the chosen move in the player slot', () => {
         render(<RPSArena {...defaultProps} gameState={{ playerChoices: { u1: 'Paper' }, readyPlayers: [] }} />);
-        // The large icon in the left panel
-        const icons = screen.getAllByText('📄');
-        expect(icons.length).toBeGreaterThan(0);
-    });
-
-    it('should show ✂️ icon for player myMove=Scissors', () => {
-        render(<RPSArena {...defaultProps} gameState={{ playerChoices: { u1: 'Scissors' }, readyPlayers: [] }} />);
-        const icons = screen.getAllByText('✂️');
-        expect(icons.length).toBeGreaterThan(0);
-    });
-
-    it('should show 🔒 icon when myMove=hidden', () => {
-        render(<RPSArena {...defaultProps} gameState={{ playerChoices: { u1: 'hidden' }, readyPlayers: [] }} />);
-        expect(screen.getAllByText('🔒').length).toBeGreaterThan(0);
-    });
-
-    it('should show ❓ icon when no move made', () => {
-        render(<RPSArena {...defaultProps} gameState={{ playerChoices: {}, readyPlayers: [] }} />);
-        // The left-panel "no move yet" icon
-        expect(screen.getAllByText('❓').length).toBeGreaterThan(0);
+        // One in the move slot, one on the Paper button
+        expect(screen.getAllByText('Paper').length).toBe(2);
     });
 
     // ----- spectator (isPlayer=false) -----
-    it('should show COMBATANT ALPHA label when spectating', () => {
+    it('should label the first slot with the player name when spectating', () => {
         render(<RPSArena {...defaultProps} isPlayer={false} />);
-        expect(screen.getByText('COMBATANT ALPHA')).toBeDefined();
+        expect(screen.getByText('Alpha')).toBeDefined();
     });
 
     it('should NOT show move buttons for spectator', () => {
         render(<RPSArena {...defaultProps} isPlayer={false} />);
-        // No Rock/Paper/Scissors buttons
-        const buttons = screen.queryAllByRole('button');
-        expect(buttons.length).toBe(0);
+        expect(screen.queryAllByRole('button').length).toBe(0);
     });
 
     // ----- no opponent -----
     it('should render without opponent (opponent=null)', () => {
         render(<RPSArena {...defaultProps} opponent={null} />);
-        expect(screen.getByText('COMBATANT BRAVO')).toBeDefined();
+        expect(screen.getByText(/Waiting for opponent/)).toBeDefined();
     });
 
     // ----- opponent move indicator -----
-    it('should show STRIKE READY when opponent has moved', () => {
+    it('should show Ready when opponent has moved, without revealing the move', () => {
         render(<RPSArena {...defaultProps} gameState={{ playerChoices: { u2: 'hidden' }, readyPlayers: [] }} />);
-        expect(screen.getByText('STRIKE READY')).toBeDefined();
+        expect(screen.getByText('Ready')).toBeDefined();
     });
 
-    it('should show CALCULATING when opponent has not moved', () => {
+    it('should show Choosing when opponent has not moved', () => {
         render(<RPSArena {...defaultProps} gameState={{ playerChoices: {}, readyPlayers: [] }} />);
-        expect(screen.getByText('CALCULATING')).toBeDefined();
+        expect(screen.getByText('Choosing…')).toBeDefined();
     });
 
-    // ----- round over: WIN -----
-    it('should render round over overlay with win result', () => {
+    // ----- round over -----
+    it('should tell the player they won the round', () => {
         render(<RPSArena
             {...defaultProps}
             isRoundOver={true}
@@ -116,13 +97,23 @@ describe('RPSArena', () => {
                 readyPlayers: []
             }}
         />);
-        expect(screen.getByText(/Combat Results/i)).toBeDefined();
-        expect(screen.getByText(/Alpha DOMINANT/i)).toBeDefined();
-        expect(screen.getByText('🏆')).toBeDefined();
+        expect(screen.getByText('You won this round')).toBeDefined();
     });
 
-    // ----- round over: DRAW -----
-    it('should render round over overlay with draw result', () => {
+    it('should name the opponent when they win the round', () => {
+        render(<RPSArena
+            {...defaultProps}
+            isRoundOver={true}
+            gameState={{
+                playerChoices: { u1: 'Scissors', u2: 'Rock' },
+                lastResult: { winnerUid: 'u2', isDraw: false },
+                readyPlayers: []
+            }}
+        />);
+        expect(screen.getByText('Bravo won this round')).toBeDefined();
+    });
+
+    it('should show a draw', () => {
         render(<RPSArena
             {...defaultProps}
             isRoundOver={true}
@@ -132,13 +123,10 @@ describe('RPSArena', () => {
                 readyPlayers: []
             }}
         />);
-        expect(screen.getByText(/Sync Protocol/i)).toBeDefined();
-        expect(screen.getByText(/RESULT: EQUALIZED/i)).toBeDefined();
-        expect(screen.getByText('🤝')).toBeDefined();
+        expect(screen.getByText("It's a draw")).toBeDefined();
     });
 
-    // ----- round over: spectator view -----
-    it('should show "Waiting for next round..." for spectator during round over', () => {
+    it('should show a waiting message for spectators when the round is over', () => {
         render(<RPSArena
             {...defaultProps}
             isPlayer={false}
@@ -149,11 +137,10 @@ describe('RPSArena', () => {
                 readyPlayers: []
             }}
         />);
-        expect(screen.getByText(/Waiting for next round/i)).toBeDefined();
+        expect(screen.getByText(/Waiting for the players to start the next round/)).toBeDefined();
     });
 
-    // ----- round over: NEXT ROUND button -----
-    it('should show NEXT ROUND button and call handleNextRound', () => {
+    it('should show Next round button and call handleNextRound', () => {
         const handleNextRound = vi.fn();
         render(<RPSArena
             {...defaultProps}
@@ -165,13 +152,11 @@ describe('RPSArena', () => {
                 readyPlayers: []
             }}
         />);
-        const nextRoundBtn = screen.getByRole('button', { name: /NEXT ROUND/i });
-        fireEvent.click(nextRoundBtn);
+        fireEvent.click(screen.getByRole('button', { name: /Next round/i }));
         expect(handleNextRound).toHaveBeenCalled();
     });
 
-    // ----- round over: player already ready → WAITING -----
-    it('should show WAITING when player is in readyPlayers', () => {
+    it('should show a disabled waiting button once the player is ready', () => {
         render(<RPSArena
             {...defaultProps}
             isRoundOver={true}
@@ -181,12 +166,11 @@ describe('RPSArena', () => {
                 readyPlayers: ['u1']
             }}
         />);
-        expect(screen.getByRole('button', { name: /WAITING.../i })).toBeDefined();
-        expect(screen.getByRole('button', { name: /WAITING.../i })).toBeDisabled();
+        expect(screen.getByRole('button', { name: /Waiting for opponent/i })).toBeDisabled();
+        expect(screen.getByText('1 of 2 ready')).toBeDefined();
     });
 
-    // ----- round over: opponent move icons -----
-    it('should reveal Rock icon for opponent after round over', () => {
+    it('should reveal the opponent move after the round is over', () => {
         render(<RPSArena
             {...defaultProps}
             isRoundOver={true}
@@ -196,46 +180,17 @@ describe('RPSArena', () => {
                 readyPlayers: []
             }}
         />);
-        // Both the player icon (📄) and opponent icon (🪨) should appear
-        expect(screen.getAllByText('🪨').length).toBeGreaterThan(0);
+        expect(screen.getByText('Paper vs Rock')).toBeDefined();
+        expect(screen.getAllByText('Rock').length).toBeGreaterThan(0);
     });
 
-    it('should reveal Paper icon for opponent after round over', () => {
+    it('should keep the opponent slot hidden while the round is in progress', () => {
         render(<RPSArena
             {...defaultProps}
-            isRoundOver={true}
-            gameState={{
-                playerChoices: { u1: 'Scissors', u2: 'Paper' },
-                lastResult: { winnerUid: 'u1' },
-                readyPlayers: []
-            }}
+            isPlayer={false}
+            gameState={{ playerChoices: { u1: 'hidden', u2: 'hidden' }, readyPlayers: [] }}
         />);
-        expect(screen.getAllByText('📄').length).toBeGreaterThan(0);
-    });
-
-    it('should reveal Scissors icon for opponent after round over', () => {
-        render(<RPSArena
-            {...defaultProps}
-            isRoundOver={true}
-            gameState={{
-                playerChoices: { u1: 'Rock', u2: 'Scissors' },
-                lastResult: { winnerUid: 'u1' },
-                readyPlayers: []
-            }}
-        />);
-        expect(screen.getAllByText('✂️').length).toBeGreaterThan(0);
-    });
-
-    it('should show ❓ for unknown opponent move after round over', () => {
-        render(<RPSArena
-            {...defaultProps}
-            isRoundOver={true}
-            gameState={{
-                playerChoices: { u1: 'Rock', u2: undefined },
-                lastResult: { winnerUid: 'u1' },
-                readyPlayers: []
-            }}
-        />);
-        expect(screen.getAllByText('❓').length).toBeGreaterThan(0);
+        expect(screen.queryByText('Rock')).toBeNull();
+        expect(screen.getAllByText('Ready').length).toBe(2);
     });
 });
