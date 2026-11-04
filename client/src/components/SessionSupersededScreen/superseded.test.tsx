@@ -10,11 +10,11 @@ vi.mock('react-router-dom', async () => {
 });
 
 describe('SessionSupersededScreen', () => {
-    it('explains what happened and goes back to the lobby', () => {
+    it('explains what happened and goes back to the games', () => {
         render(<MemoryRouter><SessionSupersededScreen /></MemoryRouter>);
 
-        expect(screen.getByText(/playing in another tab/i)).toBeDefined();
-        fireEvent.click(screen.getByRole('button', { name: 'Back to lobby' }));
-        expect(mockedNavigate).toHaveBeenCalledWith('/');
+        expect(screen.getByRole('heading', { name: "You're playing in another tab" })).toBeDefined();
+        fireEvent.click(screen.getByRole('button', { name: 'Back to games' }));
+        expect(mockedNavigate).toHaveBeenCalledWith('/play');
     });
 });

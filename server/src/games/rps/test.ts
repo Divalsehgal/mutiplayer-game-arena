@@ -1,3 +1,4 @@
+/* eslint-disable max-lines -- one describe block per handler method */
 import { rpsGameHandler } from './index';
 import { RPSState } from '../../models';
 
@@ -67,6 +68,16 @@ describe('RPS Game Handler', () => {
             expect((result.newGameState as RPSState).readyPlayers).toContain('p1');
         });
 
+        it('ignores ready mid-round and never mutates the input state', () => {
+            const state: RPSState = { ...rpsGameHandler.getInitialState(), status: 'playing', readyPlayers: ['p1'] };
+            const result = rpsGameHandler.handleReady({ room: twoPlayerRoom(), gameState: state, playerUid: 'p2' });
+            expect(result.newGameState).toBe(state);
+
+            const over: RPSState = { ...rpsGameHandler.getInitialState(), status: 'waiting_for_ready', readyPlayers: [] };
+            rpsGameHandler.handleReady({ room: twoPlayerRoom(), gameState: over, playerUid: 'p1' });
+            expect(over.readyPlayers).toEqual([]);
+        });
+
         it('should not double-add player to readyPlayers', () => {
             const state: RPSState = {
                 ...rpsGameHandler.getInitialState(),
@@ -128,6 +139,14 @@ describe('RPS Game Handler', () => {
                 move: 'Rock'
             });
             expect(result.newGameState.status).toBe('waiting_for_ready');
+        });
+
+        it('rejects anything that is not Rock, Paper or Scissors', () => {
+            for (const move of ['Lizard', 'hidden', 3, null, { $ne: 1 }]) {
+                const result = rpsGameHandler.handleMove({ room: twoPlayerRoom(), gameState: playingState(), playerUid: 'p1', move });
+                expect(result.error).toBeDefined();
+                expect((result.newGameState as RPSState).playerChoices).toEqual({});
+            }
         });
 
         it('should record first move without resolving round (L121-126)', () => {

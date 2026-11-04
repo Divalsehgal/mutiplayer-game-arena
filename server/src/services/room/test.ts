@@ -44,6 +44,16 @@ describe('RoomService', () => {
         expect(result.roomDeleted).toBe(true);
     });
 
+    it('drops a leaving player from the rematch vote', () => {
+        const room = { id: 'r1', status: 'playing', gameState: { status: 'finished', readyPlayers: ['u1', 'u2'] } };
+        mockRepo.leaveRoom.mockReturnValue({ roomId: 'r1', roomDeleted: false });
+        mockRepo.getRoom.mockReturnValue(room);
+
+        service.leaveRoom({ roomId: 'r1', playerUid: 'u1' });
+
+        expect(room.gameState.readyPlayers).toEqual(['u2']);
+    });
+
     it('should create a SNAKE_LADDER room with 4 max players', () => {
         mockRegistry.SNAKE_LADDER = { 
             getInitialState: jest.fn().mockReturnValue({}) 

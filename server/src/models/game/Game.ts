@@ -1,4 +1,3 @@
-import { Server } from "socket.io";
 import { Room } from "../room/Room";
 
 export interface GameEvent {
@@ -22,7 +21,6 @@ export interface TicTacToeState extends BaseGameState {
     currentTurn: string | null;
     winner: string | null;
     isDraw?: boolean;
-    logs: string[];
 }
 
 export interface SnakeLadderState extends BaseGameState {
@@ -49,7 +47,6 @@ export interface GameRegistry {
         gameState: GameState;
         playerUid: string;
         move: unknown;
-        io: Server;
     }) => GameMoveResult;
     handleReady?: (args: {
         room: Room;

@@ -9,7 +9,8 @@ import { BotRunner } from "../services/bot";
 import { registerRoomRoutes } from "../routes/room";
 import { registerGameRoutes } from "../routes/game";
 import { Logger } from "../models";
-import { verifyAccessToken } from "../utils/authTokens";
+import { safeHandler, schemas } from "./safeHandler";
+import { issueGuestToken, verifyAccessToken, verifyGuestToken } from "../utils/authTokens";
 
 const getCookieValue = (cookieHeader: string | undefined, name: string) => {
     if (!cookieHeader) return undefined;
@@ -40,11 +41,11 @@ export function initSocket({ io, roomStore, gameRegistry, logger }: {
 
     // Authentication middleware
     io.use((socket, next) => {
-        const { token, playerUid } = socket.handshake.auth;
+        const { token, guestToken } = socket.handshake.auth ?? {};
         const cookieToken = getCookieValue(socket.handshake.headers?.cookie, "access_token");
         const accessToken = typeof token === "string" ? token : cookieToken;
 
-        logger.info(`Socket Auth Attempt - UID: ${playerUid}, HasToken: ${!!accessToken}`);
+        logger.info(`Socket Auth Attempt - HasToken: ${!!accessToken}, HasGuestToken: ${!!guestToken}`);
 
         // If JWT token is provided, verify it
         if (accessToken) {
@@ -61,20 +62,21 @@ export function initSocket({ io, roomStore, gameRegistry, logger }: {
             } catch (err) {
                 const error = err as Error;
                 logger.error(`Socket JWT Verification Failed: ${error.message}`);
-                return next(new Error(`AUTHENTICATION_FAILED: ${error.message}`));
+                return next(new Error("AUTHENTICATION_FAILED"));
             }
         }
 
-        // Fallback to anonymous playerUid 
-        if (!playerUid) {
-            logger.error(`Socket Auth Failed: No token and no playerUid`);
-            return next(new Error("AUTHENTICATION_FAILED: Authentication required"));
+        // Player ids are broadcast to everyone in a room, so a guest's id must come from the
+        // server: reuse it only with our signature, otherwise mint a fresh one the client keeps.
+        const guestUid = verifyGuestToken(guestToken);
+        if (guestUid) {
+            socket.data.playerUid = guestUid;
+        } else {
+            const issued = issueGuestToken();
+            socket.data.playerUid = issued.playerUid;
+            socket.data.guestToken = issued.token;
         }
-
-        // Player ids are visible to everyone in a room, so an unauthenticated id must never be
-        // able to match a real account (or the computer player) and take over its seat.
-        socket.data.playerUid = `guest:${playerUid}`;
-        logger.info(`Socket Connected as Anonymous: ${socket.data.playerUid}`);
+        logger.info(`Socket Connected as Guest: ${socket.data.playerUid}`);
         next();
     });
 
@@ -82,16 +84,22 @@ export function initSocket({ io, roomStore, gameRegistry, logger }: {
         logger.info(`Client connected: ${socket.id} (UID: ${socket.data.playerUid})`);
 
         // Register Routes
-        registerRoomRoutes(io, socket, roomController);
-        registerGameRoutes(io, socket, gameController);
+        registerRoomRoutes(socket, roomController);
+        registerGameRoutes(socket, gameController);
 
-        socket.on("register", (_data, callback) => callback?.({ ok: true }));
+        // A newly minted guest identity: the client stores the token and sends it back as auth.guestToken.
+        const guestIdentity = socket.data.guestToken
+            ? { playerUid: socket.data.playerUid, guestToken: socket.data.guestToken }
+            : { playerUid: socket.data.playerUid };
+        if (socket.data.guestToken) socket.emit("guest-token", guestIdentity);
+
+        socket.on("register", safeHandler("register", schemas.none, (_data, ack) => ack({ ok: true, ...guestIdentity })));
 
         socket.on("disconnect", () => {
             const result = roomStore.markSocketDisconnected(socket.id);
-            if (result) {
-                io.to(result.room.id).emit("room-update", roomStore.serializeRoom(result.room.id));
-            }
+            if (result) gameController.broadcastRoomUpdate(result.room.id);
         });
     });
+
+    return { roomController, gameController };
 }

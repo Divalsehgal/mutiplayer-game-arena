@@ -24,6 +24,7 @@ vi.mock('../../api/client', () => ({
 }));
 
 vi.mock('@react-oauth/google', () => ({
+  GoogleOAuthProvider: ({ children }: any) => <>{children}</>,
   GoogleLogin: ({ onSuccess, onError }: any) => (
     <div data-testid="google-login">
         <button onClick={() => onSuccess({ credential: 'mock_token' })}>Success</button>
@@ -47,7 +48,7 @@ describe('AuthScreen redirect handling', () => {
         vi.clearAllMocks();
     });
 
-    it('should redirect to the lobby after login when there is no originating location', async () => {
+    it('should redirect to the games after login when there is no originating location', async () => {
         const setAuth = vi.fn();
 
         vi.mocked(apiFetch).mockResolvedValue({
@@ -68,8 +69,8 @@ describe('AuthScreen redirect handling', () => {
 
         const { container } = render(<BrowserRouter><AuthScreen /></BrowserRouter>);
 
-        fireEvent.change(screen.getByPlaceholderText(/you@example.com/i), { target: { value: 'test@test.com', name: 'email' } });
-        fireEvent.change(screen.getByPlaceholderText(/••••••••/i), { target: { value: 'password', name: 'password' } });
+        fireEvent.change(screen.getByLabelText('Email'), { target: { value: 'test@test.com', name: 'email' } });
+        fireEvent.change(screen.getByLabelText('Password'), { target: { value: 'password', name: 'password' } });
 
         const signInButton = container.querySelector('button[type="submit"]');
         await act(async () => {
@@ -78,10 +79,10 @@ describe('AuthScreen redirect handling', () => {
 
         await waitFor(() => expect(apiFetch).toHaveBeenCalled());
         await waitFor(() => expect(setAuth).toHaveBeenCalledWith({ id: 'u1' }, 't1'));
-        expect(mockedNavigate).toHaveBeenCalledWith('/');
+        expect(mockedNavigate).toHaveBeenCalledWith('/play');
     });
 
-    it('should redirect back to the originating room link after login instead of the lobby', async () => {
+    it('should redirect back to the originating room link after login instead of the games', async () => {
         const setAuth = vi.fn();
 
         vi.mocked(apiFetch).mockResolvedValue({
@@ -106,8 +107,8 @@ describe('AuthScreen redirect handling', () => {
             </MemoryRouter>
         );
 
-        fireEvent.change(screen.getByPlaceholderText(/you@example.com/i), { target: { value: 'test@test.com', name: 'email' } });
-        fireEvent.change(screen.getByPlaceholderText(/••••••••/i), { target: { value: 'password', name: 'password' } });
+        fireEvent.change(screen.getByLabelText('Email'), { target: { value: 'test@test.com', name: 'email' } });
+        fireEvent.change(screen.getByLabelText('Password'), { target: { value: 'password', name: 'password' } });
 
         const signInButton = container.querySelector('button[type="submit"]');
         await act(async () => {
@@ -133,6 +134,6 @@ describe('AuthScreen redirect handling', () => {
             </MemoryRouter>
         );
 
-        expect(screen.queryByText(/Welcome Back/i)).toBeNull();
+        expect(screen.queryByRole('heading', { name: 'Sign in' })).toBeNull();
     });
 });

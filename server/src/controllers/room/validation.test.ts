@@ -13,7 +13,7 @@ describe('RoomController input checks', () => {
             joinRoom: jest.fn().mockReturnValue({ room: { id: 'r1', players: [] } }),
             extendRoom: jest.fn(),
         };
-        mockRoomRepository = { getRoom: jest.fn(), serializeRoom: jest.fn() };
+        mockRoomRepository = { getRoom: jest.fn(), serializeRoom: jest.fn(), getRoomForPlayer: jest.fn() };
         const gameService: any = { getPublicRoomState: jest.fn() };
         controller = new RoomController(io, mockRoomService, gameService, mockRoomRepository);
     });

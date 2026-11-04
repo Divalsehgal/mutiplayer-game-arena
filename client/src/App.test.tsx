@@ -1,12 +1,12 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import App from './App';
 import { useSocket } from './hooks/useSocket';
 
 const authState = vi.hoisted(() => ({
     isAuthenticated: true,
     isLoading: false,
-    user: { user_name: 'Dana', email: 'dana@example.com' },
+    user: { user_name: 'Dana', email: 'dana@example.com' } as { user_name: string; email: string } | null,
     checkAuth: vi.fn(),
     logout: vi.fn(),
 }));
@@ -15,13 +15,11 @@ vi.mock('./store/auth', () => ({
     useAuthStore: (selector?: (s: typeof authState) => unknown) => (selector ? selector(authState) : authState),
 }));
 vi.mock('./hooks/useSocket', () => ({ useSocket: vi.fn(() => ({ isConnected: true })) }));
-vi.mock('@react-oauth/google', () => ({
-    GoogleOAuthProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
-}));
 vi.mock('./screens/LobbyScreen', () => ({ default: () => <p>Lobby screen</p> }));
 vi.mock('./screens/RoomScreen', () => ({ default: () => <p>Room screen</p> }));
 vi.mock('./screens/GameScreen', () => ({ default: () => <p>Game screen</p> }));
 vi.mock('./screens/AuthScreen', () => ({ default: () => <p>Auth screen</p> }));
+vi.mock('./screens/SudokuScreen', () => ({ default: () => <p>Sudoku screen</p> }));
 
 const renderAt = (path: string) => {
     window.history.pushState({}, '', path);
@@ -32,23 +30,26 @@ describe('App', () => {
     beforeEach(() => {
         vi.clearAllMocks();
         authState.isAuthenticated = true;
+        authState.user = { user_name: 'Dana', email: 'dana@example.com' };
         vi.mocked(useSocket).mockReturnValue({ isConnected: true } as any);
     });
 
     it.each([
-        ['/', 'Lobby screen'],
+        ['/', 'Quick games with friends'],
+        ['/play', 'Lobby screen'],
         ['/room/abc', 'Room screen'],
         ['/game/abc', 'Game screen'],
         ['/login', 'Auth screen'],
-    ])('renders the right screen at %s', (path, text) => {
+        ['/sudoku', 'Sudoku screen'],
+    ])('renders the right screen at %s', async (path, text) => {
         renderAt(path);
-        expect(screen.getByText(text)).toBeDefined();
+        expect(await screen.findByText(text)).toBeDefined();
     });
 
-    it('sends unknown routes to the lobby', () => {
+    it('shows a not-found page for unknown routes', async () => {
         renderAt('/settings');
-        expect(screen.getByText('Lobby screen')).toBeDefined();
-        expect(window.location.pathname).toBe('/');
+        expect(await screen.findByRole('heading', { name: 'Page not found' })).toBeDefined();
+        expect(window.location.pathname).toBe('/settings');
     });
 
     it('checks the session on load, except on the login page', () => {
@@ -71,21 +72,24 @@ describe('App', () => {
         expect(screen.queryByText(/Reconnecting/)).toBeNull();
     });
 
-    it('hides the navigation on the login page', () => {
-        renderAt('/login');
-        expect(screen.queryByText('Game Arena')).toBeNull();
-        expect(screen.queryByText('Log out')).toBeNull();
+    it('shows the top bar navigation', () => {
+        renderAt('/');
+        expect(screen.getByRole('link', { name: /Game Arena/ }).getAttribute('href')).toBe('/');
+        expect(screen.getByRole('link', { name: 'Play' }).getAttribute('href')).toBe('/play');
+        expect(screen.getByRole('link', { name: 'Daily Sudoku' }).getAttribute('href')).toBe('/sudoku');
     });
 
-    it('opens and closes the mobile menu', () => {
-        renderAt('/');
-        const toggle = screen.getAllByRole('button').find((b) => b.closest('header'))!;
-        const drawer = () => screen.getAllByText('Dana')[1].closest('.fixed')!;
+    it('logs out from the top bar and goes home', async () => {
+        renderAt('/play');
+        fireEvent.click(screen.getByRole('button', { name: 'Log out' }));
+        expect(authState.logout).toHaveBeenCalled();
+        await waitFor(() => expect(window.location.pathname).toBe('/'));
+    });
 
-        expect(drawer().className).toContain('-translate-x-full');
-        fireEvent.click(toggle);
-        expect(drawer().className).toContain('translate-x-0');
-        fireEvent.click(toggle);
-        expect(drawer().className).toContain('-translate-x-full');
+    it('offers a sign-in link when signed out', () => {
+        authState.user = null;
+        renderAt('/');
+        expect(screen.queryByText('Log out')).toBeNull();
+        expect(screen.getByRole('link', { name: 'Sign in' }).getAttribute('href')).toBe('/login');
     });
 });

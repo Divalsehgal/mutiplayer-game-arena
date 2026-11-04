@@ -4,6 +4,7 @@ import AuthModel from '../../models/auth';
 import UserModel from '../../models/user';
 import SessionModel from '../../models/session';
 import jwt from 'jsonwebtoken';
+import { hashToken } from '../../utils/authTokens';
 
 jest.mock('../../models/auth');
 jest.mock('../../models/user');
@@ -81,19 +82,18 @@ describe('AuthService', () => {
         const mockAuth = {
             getJWT: jest.fn().mockReturnValue(mockTokens)
         };
-        const mockSession = {
-            save: jest.fn(),
-            refreshToken: 'old'
-        };
-
         (jwt.verify as jest.Mock).mockReturnValue({ _id: 'u1' });
-        (SessionModel.findOne as jest.Mock).mockResolvedValue(mockSession);
+        (SessionModel.findOneAndUpdate as jest.Mock).mockResolvedValue({ _id: 's1' });
         (AuthModel.findOne as jest.Mock).mockResolvedValue(mockAuth);
         (UserModel.findById as jest.Mock).mockResolvedValue({ _id: 'u1', user_name: 'u' });
 
         const result = await authService.refreshTokens('old');
         expect(result.accessToken).toBe('a2');
-        expect(mockSession.save).toHaveBeenCalled();
+        // Only digests are stored, and the swap is a single atomic update keyed on the old digest.
+        expect(SessionModel.findOneAndUpdate).toHaveBeenCalledWith(
+            { refreshToken: hashToken('old'), userId: 'u1' },
+            expect.objectContaining({ refreshToken: hashToken('r2') })
+        );
     });
 
     it('should throw error if user not found on signin', async () => {
@@ -114,7 +114,7 @@ describe('AuthService', () => {
     it('should logout by deleting session', async () => {
         (SessionModel.deleteOne as jest.Mock).mockResolvedValue({ deletedCount: 1 });
         await authService.logout('token123');
-        expect(SessionModel.deleteOne).toHaveBeenCalledWith({ refreshToken: 'token123' });
+        expect(SessionModel.deleteOne).toHaveBeenCalledWith({ refreshToken: hashToken('token123') });
     });
 
     it('should abort transaction and throw error on signup failure', async () => {
@@ -137,12 +137,15 @@ describe('AuthService', () => {
         expect(mockSession.endSession).toHaveBeenCalled();
     });
 
-    it('should throw error if session not found on refresh', async () => {
+    it('ends every session of the user when a spent refresh token is reused', async () => {
         (jwt.verify as jest.Mock).mockReturnValue({ _id: 'u1' });
-        (SessionModel.findOne as jest.Mock).mockResolvedValue(null);
+        (AuthModel.findOne as jest.Mock).mockResolvedValue({ userId: 'u1', getJWT: jest.fn().mockReturnValue({ accessToken: 'a', refreshToken: 'r' }) });
+        (UserModel.findById as jest.Mock).mockResolvedValue({ _id: 'u1', user_name: 'u' });
+        (SessionModel.findOneAndUpdate as jest.Mock).mockResolvedValue(null);
 
         await expect(authService.refreshTokens('token'))
             .rejects.toThrow('Invalid or expired session');
+        expect(SessionModel.deleteMany).toHaveBeenCalledWith({ userId: 'u1' });
     });
 
     it('should throw error if jwt verification fails on refresh', async () => {

@@ -5,7 +5,7 @@ import { SignupRequest, SigninRequest } from "../../dtos/auth.dto";
 import UserModel from "../../models/user";
 import AuthModel from "../../models/auth";
 import SessionModel from "../../models/session";
-import { verifyRefreshToken } from "../../utils/authTokens";
+import { hashToken, verifyRefreshToken } from "../../utils/authTokens";
 
 export class AuthService {
     async signup(userData: SignupRequest, metadata?: { userAgent?: string, ip?: string }) {
@@ -75,7 +75,7 @@ export class AuthService {
     async createSession(userId: mongoose.Types.ObjectId, refreshToken: string, metadata?: { userAgent?: string, ip?: string }, session?: mongoose.ClientSession) {
         const userSession = new SessionModel({
             userId,
-            refreshToken,
+            refreshToken: hashToken(refreshToken),
             expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
             userAgent: metadata?.userAgent,
             ipAddress: metadata?.ip
@@ -87,12 +87,6 @@ export class AuthService {
         try {
             const decoded = verifyRefreshToken<{ _id: string; user_name?: string }>(refreshToken);
             
-            // 1. Verify session exists in DB
-            const activeSession = await SessionModel.findOne({ refreshToken, userId: decoded._id });
-            if (!activeSession) {
-                throw new Error("Invalid or expired session");
-            }
-
             const auth = await AuthModel.findOne({ userId: decoded._id });
             if (!auth) throw new Error("Invalid auth record");
 
@@ -101,10 +95,16 @@ export class AuthService {
 
             const tokens = auth.getJWT(user.user_name, user.avatar);
 
-            // 2. Rotate Session (Update existing or create new)
-            activeSession.refreshToken = tokens.refreshToken;
-            activeSession.expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
-            await activeSession.save();
+            // Rotate in one atomic step, so the same refresh token can only ever be spent once.
+            const rotated = await SessionModel.findOneAndUpdate(
+                { refreshToken: hashToken(refreshToken), userId: decoded._id },
+                { refreshToken: hashToken(tokens.refreshToken), expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) }
+            );
+            if (!rotated) {
+                // A validly signed token with no session was already used (or stolen): end every session.
+                await SessionModel.deleteMany({ userId: decoded._id });
+                throw new Error("Invalid or expired session");
+            }
 
             return tokens;
         } catch (err) {
@@ -114,7 +114,7 @@ export class AuthService {
     }
 
     async logout(refreshToken: string) {
-        await SessionModel.deleteOne({ refreshToken });
+        await SessionModel.deleteOne({ refreshToken: hashToken(refreshToken) });
     }
 }
 

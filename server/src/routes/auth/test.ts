@@ -64,4 +64,13 @@ describe('AuthRoutes', () => {
         expect(res.status).toBe(200);
         expect(authController.refreshTokenHandler).toHaveBeenCalled();
     });
+
+    it('rate limits the credential routes per IP but never logout', async () => {
+        for (let i = 0; i < 20; i++) await request(app).post('/auth/refresh').send({});
+        const limited = await request(app).post('/auth/signin').send({ email: 'test@test.com', password: 'x' });
+        expect(limited.status).toBe(429);
+
+        const logout = await request(app).post('/auth/logout').send({});
+        expect(logout.status).toBe(200);
+    });
 });

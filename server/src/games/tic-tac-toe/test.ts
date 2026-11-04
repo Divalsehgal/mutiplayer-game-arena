@@ -167,7 +167,7 @@ describe('TicTacToe Game Handler', () => {
         expect(result.newGameState.board[0]).toBe('X');
     });
 
-    it('should handle guest move and logs', () => {
+    it('should handle guest move', () => {
         const room: any = { 
             players: [
                 { playerUid: 'u1', role: 'player' }, 
@@ -177,7 +177,15 @@ describe('TicTacToe Game Handler', () => {
         const state: any = { status: 'playing', board: Array(9).fill(null), currentTurn: 'u2' };
         const result = ticTacToeGameHandler.handleMove({ room, gameState: state, playerUid: 'u2', move: 1 });
         expect(result.newGameState.board[1]).toBe('O');
-        expect(result.newGameState.logs[0]).toContain('BRAVO');
+    });
+
+    it('ignores a rematch vote while a game is in progress', () => {
+        const room: any = { players: [{ playerUid: 'u1', role: 'player' }, { playerUid: 'u2', role: 'player' }] };
+        const state: any = { status: 'playing', board: ['X', ...Array(8).fill(null)], currentTurn: 'u2', readyPlayers: [] };
+        const r1 = ticTacToeGameHandler.handleReady({ room, gameState: state, playerUid: 'u1' });
+        const r2 = ticTacToeGameHandler.handleReady({ room, gameState: r1.newGameState, playerUid: 'u2' });
+        expect(r2.newGameState).toBe(state);
+        expect(state.readyPlayers).toEqual([]); // input state never mutated
     });
 
     it('should return same state if game is finished in handleMove', () => {

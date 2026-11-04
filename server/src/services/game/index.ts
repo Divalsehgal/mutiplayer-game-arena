@@ -1,4 +1,3 @@
-import { Server } from "socket.io";
 import { RoomRepository } from "../../repositories/room";
 import { GameRegistry, Logger, Room, SerializedRoom } from "../../models";
 import { GameState } from "../../models/game/Game";
@@ -51,8 +50,7 @@ export class GameService {
             room, 
             gameState: room.gameState, 
             playerUid, 
-            move, 
-            io: null as unknown as Server
+            move
         });
 
         if (error) {

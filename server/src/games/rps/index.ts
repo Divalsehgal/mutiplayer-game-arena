@@ -1,5 +1,7 @@
 import { Room, RPSState, GameState, RoundResult } from "../../models";
 
+const HANDS = ['Rock', 'Paper', 'Scissors'];
+
 export const rpsGameHandler = {
     getInitialState(): RPSState {
         return {
@@ -15,7 +17,7 @@ export const rpsGameHandler = {
         const state = gameState as RPSState;
         const players = room.players.filter((p) => p.role === 'player');
         
-        // Critical: Don't start if there are fewer than 2 players
+        // Don't start if there are fewer than 2 players
         if (players.length < 2) {
             return { newGameState: state };
         }
@@ -36,11 +38,12 @@ export const rpsGameHandler = {
             };
         }
 
-        if (!readyPlayers.includes(playerUid)) {
-            readyPlayers.push(playerUid);
-        }
+        // A rematch vote only counts once the round is over, never mid-round.
+        if (currentStatus !== 'waiting_for_ready') return { newGameState: state };
 
-        if (readyPlayers.length >= players.length) {
+        const nextReady = readyPlayers.includes(playerUid) ? readyPlayers : [...readyPlayers, playerUid];
+
+        if (nextReady.length >= players.length) {
             return {
                 newGameState: {
                     ...state,
@@ -56,14 +59,14 @@ export const rpsGameHandler = {
         return {
             newGameState: {
                 ...state,
-                readyPlayers
+                readyPlayers: nextReady
             }
         };
     },
 
     handleMove({ room, gameState, playerUid, move }: { room: Room; gameState: GameState; playerUid: string; move: unknown }) {
         const state = gameState as RPSState;
-        // Critical: Prevent game moves if a player has left
+        // Prevent game moves if a player has left
         const players = room.players.filter((p) => p.role === 'player');
         if (players.length < 2) {
             return { 
@@ -76,8 +79,9 @@ export const rpsGameHandler = {
         }
 
         if (state.status === 'waiting_for_ready') return { newGameState: state };
+        if (typeof move !== 'string' || !HANDS.includes(move)) return { newGameState: state, error: `Invalid RPS move: ${String(move)}` };
 
-        const playerChoices = { ...state.playerChoices, [playerUid]: move as string };
+        const playerChoices = { ...state.playerChoices, [playerUid]: move };
 
         if (Object.keys(playerChoices).length >= players.length) {
             const uids = Object.keys(playerChoices);

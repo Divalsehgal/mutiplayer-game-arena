@@ -50,7 +50,8 @@ export const googleAuthHandler = async (req: Request, res: Response) => {
 
         const payload = ticket.getPayload();
 
-        if (!payload || !payload.email) {
+        // An unverified address could belong to anyone, and we link accounts by email.
+        if (!payload || !payload.email || payload.email_verified !== true) {
             return res.status(401).json({ success: false, message: "Invalid Google token payload" });
         }
 

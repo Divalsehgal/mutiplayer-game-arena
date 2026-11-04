@@ -101,11 +101,11 @@ describe('GameScreen', () => {
         expect(screen.getByText("This game isn't available yet.")).toBeDefined();
     });
 
-    it('goes back to the lobby from an ended game', () => {
+    it('goes back to the games from an ended game', () => {
         vi.mocked(useGameLogic).mockReturnValue({ room: null });
         render(<BrowserRouter><GameScreen /></BrowserRouter>);
 
-        fireEvent.click(screen.getByRole('button', { name: 'Back to lobby' }));
-        expect(window.location.pathname).toBe('/');
+        fireEvent.click(screen.getByRole('button', { name: 'Back to games' }));
+        expect(window.location.pathname).toBe('/play');
     });
 });

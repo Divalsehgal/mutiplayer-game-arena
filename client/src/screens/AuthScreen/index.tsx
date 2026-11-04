@@ -1,21 +1,19 @@
 import React, { useState } from "react";
-import { GoogleLogin, CredentialResponse } from "@react-oauth/google";
-import { motion } from "framer-motion";
+import { GoogleLogin, GoogleOAuthProvider, CredentialResponse } from "@react-oauth/google";
 import { useAuthStore } from "../../store/auth";
 import { Navigate, useLocation, useNavigate } from "react-router-dom";
 import { apiFetch } from "../../api/client";
-import {
-  Card,
-  CardHeader,
-  CardTitle,
-  CardContent,
-} from "../../components/ui/card";
-import { Button } from "../../components/ui/button";
+import { Card, CardContent } from "../../components/ui/card";
+import { usePageMeta } from "../../hooks/usePageMeta";
 import { EmailAuthForm } from "./components/EmailAuthForm";
-import { HowItsBuiltWidget } from "./components/HowItsBuiltWidget";
+
+const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
 
 const AuthScreen = () => {
+  usePageMeta({ title: "Sign in", path: "/login", noindex: true });
+
   const [isLogin, setIsLogin] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
   const [formData, setFormData] = useState({
     user_name: "",
     email: "",
@@ -27,7 +25,7 @@ const AuthScreen = () => {
   const location = useLocation();
   const redirectTo =
     (location.state as { from?: { pathname?: string } } | null)?.from
-      ?.pathname || "/";
+      ?.pathname || "/play";
 
   if (isAuthenticated) {
     return <Navigate to={redirectTo} replace />;
@@ -40,6 +38,7 @@ const AuthScreen = () => {
   const handleEmailAuth = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+    setSubmitting(true);
     try {
       const endpoint = isLogin ? "/signin" : "/signup";
       const res = await apiFetch(`/auth${endpoint}`, {
@@ -60,6 +59,8 @@ const AuthScreen = () => {
     } catch (err) {
       setError("Something went wrong. Please try again.");
       console.error(err);
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -71,83 +72,61 @@ const AuthScreen = () => {
     }
   };
 
-  return (
-    <div className="min-h-screen flex items-center justify-center p-4 bg-background">
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="w-full max-w-96"
-      >
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold tracking-tight mb-2">Game Arena</h1>
-          <p className="text-muted-foreground text-sm">
-            Play quick games with friends, right in your browser.
-          </p>
-        </div>
+  const tabClass = (active: boolean) =>
+    `flex-1 rounded-full py-2 text-sm font-medium transition-colors ${active ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`;
 
-        <Card className="shadow-xl">
-          <CardHeader>
-            <div className="flex p-1 bg-secondary/50 rounded-lg border border-border mb-4">
-              <Button
-                variant={isLogin ? "default" : "ghost"}
-                className="flex-1"
-                onClick={() => setIsLogin(true)}
-              >
+  return (
+    <div className="flex flex-1 items-start justify-center px-4 py-12 sm:py-20">
+      <div className="w-full max-w-96">
+        <h1 className="mb-6 text-3xl font-semibold tracking-tight">
+          {isLogin ? "Sign in" : "Create an account"}
+        </h1>
+
+        <Card>
+          <CardContent className="space-y-6 pt-6">
+            <div className="flex rounded-full bg-secondary p-1" role="group" aria-label="Sign in or sign up">
+              <button type="button" aria-pressed={isLogin} className={tabClass(isLogin)} onClick={() => setIsLogin(true)}>
                 Sign in
-              </Button>
-              <Button
-                variant={!isLogin ? "default" : "ghost"}
-                className="flex-1"
-                onClick={() => setIsLogin(false)}
-              >
+              </button>
+              <button type="button" aria-pressed={!isLogin} className={tabClass(!isLogin)} onClick={() => setIsLogin(false)}>
                 Sign up
-              </Button>
+              </button>
             </div>
-            <CardTitle className="text-xl font-semibold text-center">
-              {isLogin ? "Welcome back" : "Create your account"}
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-6">
+
             <EmailAuthForm
               isLogin={isLogin}
               formData={formData}
               onChange={handleChange}
               onSubmit={handleEmailAuth}
-              isLoading={isLoading}
+              isLoading={isLoading || submitting}
             />
 
-            <div className="relative">
-              <div className="absolute inset-0 flex items-center">
-                <span className="w-full border-t border-border" />
-              </div>
-              <div className="relative flex justify-center text-xs">
-                <span className="bg-card px-3 text-muted-foreground">or</span>
-              </div>
+            <div className="flex items-center gap-3 text-sm text-faint">
+              <span className="h-px flex-1 bg-raised" />
+              or
+              <span className="h-px flex-1 bg-raised" />
             </div>
 
             <div className="flex justify-center">
-              <GoogleLogin
-                onSuccess={handleGoogleSuccess}
-                onError={() => setError("Google sign-in didn't work. Please try again.")}
-                theme="filled_black"
-                shape="pill"
-                width="240"
-              />
+              <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
+                <GoogleLogin
+                  onSuccess={handleGoogleSuccess}
+                  onError={() => setError("Google sign-in didn't work. Please try again.")}
+                  theme="filled_black"
+                  shape="pill"
+                  width="240"
+                />
+              </GoogleOAuthProvider>
             </div>
 
             {error && (
-              <p
-                role="alert"
-                className="p-3 rounded-lg bg-destructive/10 border border-destructive/20 text-destructive text-sm text-center"
-              >
+              <p role="alert" className="rounded-md bg-[#2c1a20] p-3 text-center text-sm text-[#e5566f]">
                 {error}
               </p>
             )}
           </CardContent>
         </Card>
-
-        <HowItsBuiltWidget />
-      </motion.div>
+      </div>
     </div>
   );
 };

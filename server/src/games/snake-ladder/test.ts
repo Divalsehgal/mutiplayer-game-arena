@@ -57,6 +57,14 @@ describe('SnakeLadder Game Handler', () => {
         expect(finalState.readyPlayers).toEqual([]);
     });
 
+    it('ignores a rematch vote while a game is in progress', () => {
+        const room: any = { players: [{ playerUid: 'u1', role: 'player' }, { playerUid: 'u2', role: 'player' }] };
+        const state: any = { status: 'playing', positions: { u1: 40, u2: 50 }, currentTurn: 'u1', readyPlayers: ['u2'] };
+        const result = snakeLadderGameHandler.handleReady({ room, gameState: state, playerUid: 'u1' });
+        expect(result.newGameState).toBe(state);
+        expect(state.readyPlayers).toEqual(['u2']);
+    });
+
     it('should handle dice roll and position update', () => {
         const room: any = { 
             players: [

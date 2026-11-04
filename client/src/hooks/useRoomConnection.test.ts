@@ -105,6 +105,22 @@ describe('useRoomConnection', () => {
         expect(store.setRoom).toHaveBeenLastCalledWith(null);
     });
 
+    it('ignores room updates for a different room', () => {
+        renderHook(() => useRoomConnection('r1'));
+        store.setRoom.mockClear();
+
+        act(() => handlers['room-update']({ id: 'other', status: 'playing' }));
+        expect(store.setRoom).not.toHaveBeenCalled();
+    });
+
+    it('resets the room store when the room id changes', () => {
+        const { rerender } = renderHook(({ id }) => useRoomConnection(id), { initialProps: { id: 'r1' } });
+        store.reset.mockClear();
+
+        rerender({ id: 'r2' });
+        expect(store.reset).toHaveBeenCalledTimes(1);
+    });
+
     it('starts the inactivity countdown on a warning and ticks it down', () => {
         vi.useFakeTimers();
         const { rerender } = renderHook(() => useRoomConnection('r1'));
@@ -118,13 +134,13 @@ describe('useRoomConnection', () => {
         expect(store.setTtlWarning).toHaveBeenLastCalledWith(29);
     });
 
-    it('sends the player back to the lobby when the room expires', () => {
+    it('sends the player back to the games when the room expires', () => {
         renderHook(() => useRoomConnection('r1'));
 
         act(() => handlers['room-error']({ code: 'ROOM_EXPIRED' }));
 
         expect(store.setRoom).toHaveBeenCalledWith(null);
-        expect(mockNavigate).toHaveBeenCalledWith('/');
+        expect(mockNavigate).toHaveBeenCalledWith('/play');
     });
 
     it('ignores other room errors', () => {
@@ -155,14 +171,15 @@ describe('useRoomConnection', () => {
         expect(store.setTtlWarning).toHaveBeenCalledWith(null);
     });
 
-    it('leaves the room, clears local state, and returns to the lobby', () => {
+    it('leaves the room, clears local state, and returns to the games', () => {
         const { result } = renderHook(() => useRoomConnection('r1'));
+        store.reset.mockClear();
 
         act(() => result.current.handleLeave());
 
         expect(socket.emit).toHaveBeenCalledWith('leave-room', { roomId: 'r1' });
         expect(store.reset).toHaveBeenCalled();
-        expect(mockNavigate).toHaveBeenCalledWith('/');
+        expect(mockNavigate).toHaveBeenCalledWith('/play');
     });
 
     it('does nothing on extend or leave without a room id', () => {

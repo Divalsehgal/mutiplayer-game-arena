@@ -17,7 +17,7 @@ describe('RoomController', () => {
             extendRoom: jest.fn()
         };
         mockGameService = { getPublicRoomState: jest.fn() };
-        mockRoomRepository = { getRoom: jest.fn(), serializeRoom: jest.fn(), getPublicRooms: jest.fn() };
+        mockRoomRepository = { getRoom: jest.fn(), serializeRoom: jest.fn(), getPublicRooms: jest.fn(), getRoomForPlayer: jest.fn() };
         mockSocket = { id: 'socket123', data: { playerUid: 'user123' }, join: jest.fn(), leave: jest.fn() };
         
         controller = new RoomController(mockIo, mockRoomService, mockGameService, mockRoomRepository);
@@ -41,7 +41,8 @@ describe('RoomController', () => {
 
         controller.createRoom(mockSocket, { hostName: 'Host', gameType: 'RPS' }, callback);
 
-        expect(callback).toHaveBeenCalledWith({ ok: false, error: 'Failed' });
+        // Internal errors stay in the server log; the client gets a generic message.
+        expect(callback).toHaveBeenCalledWith({ ok: false, error: 'Something went wrong' });
     });
 
     it('should allow joining a room', () => {
@@ -89,13 +90,14 @@ describe('RoomController', () => {
         expect(callback).toHaveBeenCalledWith({ ok: true });
     });
 
-    it('should get public rooms', () => {
-        const mockRooms = [{ id: 'r1' }];
-        mockRoomRepository.getPublicRooms.mockReturnValue(mockRooms);
+    it('should get public rooms projected for a non-player (hides RPS choices)', () => {
+        mockRoomRepository.getPublicRooms.mockReturnValue([{ id: 'r1' }]);
+        mockGameService.getPublicRoomState.mockReturnValue({ id: 'r1', gameState: { playerChoices: { a: 'hidden' } } });
         const callback = jest.fn();
 
         controller.getPublicRooms(mockSocket, callback);
-        expect(callback).toHaveBeenCalledWith({ ok: true, rooms: mockRooms });
+        expect(mockGameService.getPublicRoomState).toHaveBeenCalledWith('r1', '');
+        expect(callback).toHaveBeenCalledWith({ ok: true, rooms: [{ id: 'r1', gameState: { playerChoices: { a: 'hidden' } } }] });
     });
 
     it('should handle errors in getPublicRooms', () => {
@@ -103,7 +105,7 @@ describe('RoomController', () => {
         const callback = jest.fn();
 
         controller.getPublicRooms(mockSocket, callback);
-        expect(callback).toHaveBeenCalledWith({ ok: false, error: 'Error fetching rooms' });
+        expect(callback).toHaveBeenCalledWith({ ok: false, error: 'Something went wrong' });
     });
 
     it('should notify the superseded socket when a player rejoins from another tab/device', () => {
@@ -138,7 +140,50 @@ describe('RoomController', () => {
         const callback = jest.fn();
 
         controller.joinRoom(mockSocket, { roomId: 'r1', name: 'N' }, callback);
-        expect(callback).toHaveBeenCalledWith({ ok: false, error: 'Join error' });
+        expect(callback).toHaveBeenCalledWith({ ok: false, error: 'Something went wrong' });
+    });
+
+    it('passes room errors through to the player', () => {
+        mockRoomService.joinRoom.mockImplementation(() => { throw { isRoomError: true, code: 'ROOM_NOT_FOUND', message: 'Room does not exist' }; });
+        const callback = jest.fn();
+
+        controller.joinRoom(mockSocket, { roomId: 'r1', name: 'N' }, callback);
+        expect(callback).toHaveBeenCalledWith({ ok: false, error: 'Room does not exist' });
+    });
+
+    it('removes the player from their previous room before joining another', () => {
+        const target = { id: 'room2', players: [] };
+        mockRoomRepository.getRoomForPlayer.mockReturnValue({ id: 'room1' });
+        mockRoomRepository.getRoom.mockImplementation((id: string) => (id === 'room2' ? target : null));
+        mockRoomService.leaveRoom.mockReturnValue({ roomId: 'room1', roomDeleted: false });
+        mockRoomService.joinRoom.mockReturnValue({ room: target });
+
+        controller.joinRoom(mockSocket, { roomId: 'room2', name: 'N' }, jest.fn());
+
+        expect(mockSocket.leave).toHaveBeenCalledWith('room1');
+        expect(mockRoomService.leaveRoom).toHaveBeenCalledWith({ roomId: 'room1', playerUid: 'user123' });
+        expect(mockRoomService.leaveRoom.mock.invocationCallOrder[0]).toBeLessThan(mockRoomService.joinRoom.mock.invocationCallOrder[0]);
+    });
+
+    it('keeps the player in their room when rejoining it or when the target room is missing', () => {
+        mockRoomRepository.getRoomForPlayer.mockReturnValue({ id: 'room1' });
+        mockRoomRepository.getRoom.mockImplementation((id: string) => (id === 'room1' ? { id: 'room1', players: [] } : null));
+        mockRoomService.joinRoom.mockReturnValue({ room: { id: 'room1', players: [] } });
+
+        controller.joinRoom(mockSocket, { roomId: 'room1', name: 'N' }, jest.fn());
+        controller.joinRoom(mockSocket, { roomId: 'nope', name: 'N' }, jest.fn());
+
+        expect(mockRoomService.leaveRoom).not.toHaveBeenCalled();
+    });
+
+    it('leaves the previous room when creating a new one', () => {
+        mockRoomRepository.getRoomForPlayer.mockReturnValue({ id: 'room1' });
+        mockRoomService.leaveRoom.mockReturnValue({ roomId: 'room1', roomDeleted: true });
+        mockRoomService.createRoom.mockReturnValue({ id: 'room2' });
+
+        controller.createRoom(mockSocket, { hostName: 'Host', gameType: 'RPS' }, jest.fn());
+
+        expect(mockRoomService.leaveRoom).toHaveBeenCalledWith({ roomId: 'room1', playerUid: 'user123' });
     });
 
     describe('with a computer opponent', () => {

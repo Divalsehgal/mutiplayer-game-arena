@@ -40,10 +40,24 @@ describe("Socket Initialization", () => {
     clientSocket.close();
   });
 
-  it("should connect and respond to register event", (done) => {
+  it("should connect and respond to register event with the guest identity", (done) => {
     clientSocket.emit("register", {}, (res: any) => {
       expect(res.ok).toBe(true);
+      expect(res.playerUid).toMatch(/^guest:/);
+      expect(res.guestToken).toEqual(expect.any(String));
       done();
+    });
+  });
+
+  it("survives malformed payloads and missing acks, replying with an error", (done) => {
+    clientSocket.emit("join-room", null);
+    clientSocket.emit("game-move", { roomId: 42 });
+    clientSocket.emit("join-room", { roomId: "x".repeat(17), name: "a" }, (res: any) => {
+      expect(res).toEqual({ ok: false, error: "Invalid request" });
+      clientSocket.emit("register", {}, (again: any) => {
+        expect(again.ok).toBe(true);
+        done();
+      });
     });
   });
 

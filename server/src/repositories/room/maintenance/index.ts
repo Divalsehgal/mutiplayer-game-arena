@@ -56,31 +56,19 @@ export class RoomMaintenanceRepository extends RoomActionRepository {
         return room;
     }
 
-    cleanupDisconnectedPlayers(gracePeriod: number) {
+    /** Offline players whose grace period has run out; the caller removes them through the normal leave path. */
+    getExpiredDisconnectedPlayers(gracePeriod: number) {
         const t = this.now();
-        const removed: { roomId: string, playerUid: string }[] = [];
+        const expired: { roomId: string, playerUid: string }[] = [];
 
-        for (const [roomId, room] of this.rooms.entries()) {
-            const initialCount = room.players.length;
-            room.players = room.players.filter((p) => {
+        for (const room of this.rooms.values()) {
+            room.players.forEach((p) => {
                 if (p.status === "offline" && p.lastDisconnectedAt && (t - p.lastDisconnectedAt > gracePeriod)) {
-                    this.playerToRoom.delete(p.playerUid);
-                    removed.push({ roomId: room.id, playerUid: p.playerUid });
-                    return false;
+                    expired.push({ roomId: room.id, playerUid: p.playerUid });
                 }
-                return true;
             });
-
-            if (room.players.length !== initialCount) {
-                room.updatedAt = t;
-                if (!this.hasHumanPlayers(room)) {
-                    this.rooms.delete(roomId);
-                } else {
-                    this.promoteSpectators(room);
-                }
-            }
         }
-        return removed;
+        return expired;
     }
 
     cleanupIdleRooms(maxIdle: number) {

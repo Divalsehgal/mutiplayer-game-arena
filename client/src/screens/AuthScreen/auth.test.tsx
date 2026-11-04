@@ -24,6 +24,7 @@ vi.mock('../../api/client', () => ({
 }));
 
 vi.mock('@react-oauth/google', () => ({
+  GoogleOAuthProvider: ({ children }: any) => <>{children}</>,
   GoogleLogin: ({ onSuccess, onError }: any) => (
     <div data-testid="google-login">
         <button onClick={() => onSuccess({ credential: 'mock_token' })}>Success</button>
@@ -57,34 +58,22 @@ describe('AuthScreen', () => {
         });
 
         render(<BrowserRouter><AuthScreen /></BrowserRouter>);
-        expect(screen.getByText(/Welcome Back/i)).toBeDefined();
+        expect(screen.getByRole('heading', { level: 1, name: 'Sign in' })).toBeDefined();
+        expect(screen.getByRole('button', { name: 'Sign in', pressed: true })).toBeDefined();
     });
 
     it('should switch to sign up form', () => {
-        vi.mocked(useAuthStore).mockReturnValue({
-            isAuthenticated: false,
-            isLoading: false,
-            setError: vi.fn(),
-            error: null
-        });
-
         render(<BrowserRouter><AuthScreen /></BrowserRouter>);
-        const signUpTab = screen.getByRole('button', { name: /Sign Up/i });
+        const signUpTab = screen.getByRole('button', { name: 'Sign up' });
         fireEvent.click(signUpTab);
-        expect(screen.getByText(/Create your account/i)).toBeDefined();
-        expect(screen.getByPlaceholderText(/what should we call you/i)).toBeDefined();
+        expect(screen.getByRole('heading', { level: 1, name: 'Create an account' })).toBeDefined();
+        expect(screen.getByText(/At least 8 characters/)).toBeDefined();
+        expect(screen.getByLabelText('Username')).toBeDefined();
     });
 
     it('should update form data on input change', () => {
-        vi.mocked(useAuthStore).mockReturnValue({
-            isAuthenticated: false,
-            isLoading: false,
-            setError: vi.fn(),
-            error: null
-        });
-
         render(<BrowserRouter><AuthScreen /></BrowserRouter>);
-        const emailInput = screen.getByPlaceholderText(/you@example.com/i) as HTMLInputElement;
+        const emailInput = screen.getByLabelText('Email') as HTMLInputElement;
         fireEvent.change(emailInput, { target: { value: 'test@test.com', name: 'email' } });
         expect(emailInput.value).toBe('test@test.com');
     });
@@ -100,8 +89,8 @@ describe('AuthScreen', () => {
         });
 
         const { container } = render(<BrowserRouter><AuthScreen /></BrowserRouter>);
-        const emailInput = screen.getByPlaceholderText(/you@example.com/i);
-        const passwordInput = screen.getByPlaceholderText(/••••••••/i);
+        const emailInput = screen.getByLabelText('Email');
+        const passwordInput = screen.getByLabelText('Password');
         
         fireEvent.change(emailInput, { target: { value: 'test@test.com', name: 'email' } });
         fireEvent.change(passwordInput, { target: { value: 'password123', name: 'password' } });
@@ -121,12 +110,12 @@ describe('AuthScreen', () => {
         const { container } = render(<BrowserRouter><AuthScreen /></BrowserRouter>);
         
         // Switch to sign up
-        const signUpTab = screen.getByRole('button', { name: /Sign Up/i });
+        const signUpTab = screen.getByRole('button', { name: 'Sign up' });
         fireEvent.click(signUpTab);
 
-        const nameInput = screen.getByPlaceholderText(/what should we call you/i);
-        const emailInput = screen.getByPlaceholderText(/you@example.com/i);
-        const passwordInput = screen.getByPlaceholderText(/••••••••/i);
+        const nameInput = screen.getByLabelText('Username');
+        const emailInput = screen.getByLabelText('Email');
+        const passwordInput = screen.getByLabelText('Password');
         
         fireEvent.change(nameInput, { target: { value: 'Tester', name: 'user_name' } });
         fireEvent.change(emailInput, { target: { value: 'test@test.com', name: 'email' } });
@@ -183,8 +172,8 @@ describe('AuthScreen', () => {
 
         const { container } = render(<BrowserRouter><AuthScreen /></BrowserRouter>);
 
-        const emailInput = screen.getByPlaceholderText(/you@example.com/i);
-        const passwordInput = screen.getByPlaceholderText(/••••••••/i);
+        const emailInput = screen.getByLabelText('Email');
+        const passwordInput = screen.getByLabelText('Password');
         
         fireEvent.change(emailInput, { target: { value: 'test@test.com', name: 'email' } });
         fireEvent.change(passwordInput, { target: { value: 'wrong', name: 'password' } });
@@ -201,7 +190,7 @@ describe('AuthScreen', () => {
         vi.mocked(apiFetch).mockResolvedValue({ ok: false, data: null } as any);
 
         render(<BrowserRouter><AuthScreen /></BrowserRouter>);
-        fireEvent.submit(screen.getByPlaceholderText('you@example.com').closest('form')!);
+        fireEvent.submit(screen.getByLabelText('Email').closest('form')!);
 
         await waitFor(() => expect(setError).toHaveBeenCalledWith("Couldn't sign you in. Check your details and try again."));
     });
@@ -213,7 +202,7 @@ describe('AuthScreen', () => {
         vi.mocked(apiFetch).mockRejectedValue(new Error('network down'));
 
         render(<BrowserRouter><AuthScreen /></BrowserRouter>);
-        fireEvent.submit(screen.getByPlaceholderText('you@example.com').closest('form')!);
+        fireEvent.submit(screen.getByLabelText('Email').closest('form')!);
 
         await waitFor(() => expect(setError).toHaveBeenCalledWith('Something went wrong. Please try again.'));
         errorSpy.mockRestore();
@@ -222,11 +211,11 @@ describe('AuthScreen', () => {
     it('switches back to sign in from sign up', () => {
         render(<BrowserRouter><AuthScreen /></BrowserRouter>);
 
-        fireEvent.click(screen.getByRole('button', { name: /Sign Up/i }));
-        expect(screen.getByText('Create your account')).toBeDefined();
+        fireEvent.click(screen.getByRole('button', { name: 'Sign up' }));
+        expect(screen.getByRole('heading', { level: 1, name: 'Create an account' })).toBeDefined();
 
         fireEvent.click(screen.getAllByRole('button', { name: 'Sign in' })[0]);
-        expect(screen.getByText('Welcome back')).toBeDefined();
+        expect(screen.getByRole('heading', { level: 1, name: 'Sign in' })).toBeDefined();
     });
 
     it('shows the error message returned by the store', () => {
@@ -239,5 +228,14 @@ describe('AuthScreen', () => {
         vi.mocked(useAuthStore).mockReturnValue({ isAuthenticated: false, isLoading: true, setError: vi.fn(), error: null } as any);
         render(<BrowserRouter><AuthScreen /></BrowserRouter>);
         expect(screen.getByRole('button', { name: 'Please wait…' })).toBeDisabled();
+    });
+
+    it('disables the submit button while the email request is in flight', async () => {
+        vi.mocked(useAuthStore).mockReturnValue({ isAuthenticated: false, isLoading: false, setError: vi.fn(), error: null } as any);
+        vi.mocked(apiFetch).mockReturnValue(new Promise(() => {}) as any);
+        render(<BrowserRouter><AuthScreen /></BrowserRouter>);
+
+        fireEvent.submit(screen.getByLabelText('Email').closest('form')!);
+        expect(await screen.findByRole('button', { name: 'Please wait…' })).toBeDisabled();
     });
 });

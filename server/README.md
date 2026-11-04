@@ -19,7 +19,7 @@ cd server
 yarn install
 yarn dev           # tsx watch server.ts (use this while developing)
 yarn build         # tsc -p tsconfig.build.json -> dist/ (test files excluded)
-yarn start         # rebuilds (prestart), then node dist/server.js
+yarn start         # node dist/server.js (run yarn build first)
 yarn test          # jest
 yarn test:coverage # jest --coverage across every source file
 yarn lint
@@ -34,10 +34,11 @@ been committed.
 |---|---|---|
 | `PORT` | HTTP/Socket.IO port | `3030` |
 | `CORS_ORIGIN` | Allowed client origin (trailing slash stripped) | `http://localhost:5173` |
+| `TRUST_PROXY` | Number of proxy hops in front of the server (e.g. `1` behind a load balancer). Needed so the auth rate limit (20 requests / 15 min per IP) sees real client IPs; leave unset when clients connect directly. | — |
 | `MONGO_DB_URI` | Mongo connection string. If unset, the server still starts (rooms/games work) but auth routes that touch the DB will fail. | — |
 | `DB_NAME` | Appended to `MONGO_DB_URI` | — |
-| `JWT_SECRET` | Access token signing secret. **Required in production**: without it, issuing or checking a token throws (the server still boots). Falls back to a dev default otherwise. | `access_secret_key` (dev only) |
-| `REFRESH_TOKEN_SECRET` | Refresh token signing secret. Same production requirement as above. | `refresh_secret_key` (dev only) |
+| `JWT_SECRET` | Access token signing secret (also signs guest tokens). **Required** unless `NODE_ENV=test`: without it, issuing or checking a token throws (the server still boots). | — |
+| `REFRESH_TOKEN_SECRET` | Refresh token signing secret. Same requirement as above. | — |
 | `GOOGLE_CLIENT_ID` / `CLIENT_ID` | Google OAuth client id | — |
 | `GOOGLE_CLIENT_SECRET` / `CLIENT_SECRET` | Google OAuth client secret | — |
 | `NODE_ENV` | `production` toggles secure/`SameSite=None` auth cookies and enforces the JWT secrets above | — |

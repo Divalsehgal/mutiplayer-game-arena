@@ -74,17 +74,6 @@ describe('TicTacToeArena', () => {
         expect(screen.getByRole('button', { name: /Play again/i })).toBeDefined();
     });
 
-    it('should log error if board is missing', () => {
-        const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-        const props = { 
-            ...defaultProps, 
-            gameState: { currentTurn: 'u1', board: null } 
-        };
-        render(<TicTacToeArena {...props} />);
-        expect(consoleSpy).toHaveBeenCalledWith("TicTacToe Error: Board is missing from gameState", props.gameState);
-        consoleSpy.mockRestore();
-    });
-
     it("shows whose turn it is when it isn't yours, and ignores clicks", () => {
         const handleTicTacToeMove = vi.fn();
         render(<TicTacToeArena {...defaultProps} handleTicTacToeMove={handleTicTacToeMove} gameState={{ board: Array(9).fill(null), currentTurn: 'u2' }} />);

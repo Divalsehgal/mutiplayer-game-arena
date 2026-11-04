@@ -1,3 +1,4 @@
+import { randomInt } from "node:crypto";
 import { Room, SerializedRoom } from "../../../models/room/Room";
 import { Player } from "../../../models/player/Player";
 import { serializeRoom } from "../utils/mapper";
@@ -12,13 +13,21 @@ export class RoomBaseRepository {
         protected roomTtlMs = 5 * 60 * 1000 
     ) {}
 
+    // Room codes are typed by hand, so skip look-alikes (0/O, 1/I/L). 31^6 ~ 887M codes.
+    private static ROOM_ID_ALPHABET = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
+
     protected generateRoomId() {
-        return Math.random().toString(36).substring(2, 7).toLowerCase();
+        const alphabet = RoomBaseRepository.ROOM_ID_ALPHABET;
+        let id: string;
+        do {
+            id = Array.from({ length: 6 }, () => alphabet[randomInt(alphabet.length)]).join("");
+        } while (this.rooms.has(id));
+        return id;
     }
 
     getRoom(roomId: string): Room | null {
         if (!roomId) return null;
-        return this.rooms.get(roomId.toLowerCase()) || null;
+        return this.rooms.get(roomId.toUpperCase()) || null;
     }
 
     getRoomForPlayer(playerUid: string): Room | null {

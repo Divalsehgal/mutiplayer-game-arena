@@ -83,6 +83,25 @@ describe('AuthController', () => {
         expect(mockRes.status).toHaveBeenCalledWith(200);
     });
 
+    it('should ignore a non-string refresh cookie on logout (NoSQL operator injection)', async () => {
+        mockReq.cookies.refresh_token = { $ne: null };
+
+        await logoutHandler(mockReq, mockRes);
+
+        expect(AuthService.prototype.logout).not.toHaveBeenCalled();
+        expect(mockRes.status).toHaveBeenCalledWith(200);
+    });
+
+    it('should still sign the browser out if removing the session fails', async () => {
+        mockReq.cookies.refresh_token = 'token';
+        (AuthService.prototype.logout as jest.Mock).mockRejectedValueOnce(new Error('db down'));
+
+        await logoutHandler(mockReq, mockRes);
+
+        expect(mockRes.clearCookie).toHaveBeenCalledWith('refresh_token', expect.any(Object));
+        expect(mockRes.status).toHaveBeenCalledWith(200);
+    });
+
     it('should fail refresh if token missing', async () => {
         mockReq.cookies.refresh_token = undefined;
         await refreshTokenHandler(mockReq, mockRes);
@@ -125,9 +144,10 @@ describe('AuthController', () => {
             await signupHandler(mockReq, mockRes);
             
             expect(mockRes.status).toHaveBeenCalledWith(400);
+            // Generic on purpose: don't reveal which emails/usernames exist.
             expect(mockRes.json).toHaveBeenCalledWith({
                 success: false,
-                message: 'User already exists'
+                message: "Couldn't create the account"
             });
         });
     });

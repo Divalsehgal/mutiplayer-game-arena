@@ -8,7 +8,6 @@ export const ticTacToeGameHandler = {
             currentTurn: null,
             winner: null,
             readyPlayers: [],
-            logs: ["Awaiting combatants for high-stakes grid combat."]
         };
     },
 
@@ -29,17 +28,16 @@ export const ticTacToeGameHandler = {
                     currentTurn: players[0].playerUid,
                     winner: null,
                     readyPlayers: [],
-                    logs: ["Grid initialized. Tactical engagement active."]
                 } as TicTacToeState
             };
         }
 
-        // For rematches (status === 'finished'), we wait for all players to be ready
-        if (!readyPlayers.includes(playerUid)) {
-            readyPlayers.push(playerUid);
-        }
+        // For rematches we wait for all players to be ready, and only once the game is over.
+        if (currentStatus !== 'finished') return { newGameState: state };
 
-        if (readyPlayers.length >= players.length) {
+        const nextReady = readyPlayers.includes(playerUid) ? readyPlayers : [...readyPlayers, playerUid];
+
+        if (nextReady.length >= players.length) {
             return {
                 newGameState: {
                     ...gameState,
@@ -49,12 +47,11 @@ export const ticTacToeGameHandler = {
                     winner: null,
                     isDraw: false,
                     readyPlayers: [],
-                    logs: ["Grid reset. New cycle initialized."]
                 } as TicTacToeState
             };
         }
 
-        return { newGameState: { ...state, readyPlayers } as TicTacToeState };
+        return { newGameState: { ...state, readyPlayers: nextReady } as TicTacToeState };
     },
 
     handleMove({ room, gameState, playerUid, move }: { room: Room; gameState: GameState; playerUid: string; move: unknown }) {
@@ -95,7 +92,6 @@ export const ticTacToeGameHandler = {
                 winner: winnerUid,
                 status,
                 isDraw: !winnerMark && !newBoard.includes(null),
-                logs: [`Combatant ${isHost ? 'ALPHA' : 'BRAVO'} marked node ${index}.`, ...(winnerUid ? ["ENGAGEMENT COMPLETE: VICTORY."] : [])]
             } as TicTacToeState,
             winnerUid
         };

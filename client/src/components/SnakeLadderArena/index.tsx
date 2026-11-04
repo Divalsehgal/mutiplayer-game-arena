@@ -34,7 +34,7 @@ export function SnakeLadderArena({
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            className="absolute inset-[-16px] sm:inset-[-40px] z-50 flex flex-col items-center justify-center bg-background/90 backdrop-blur-sm"
+            className="absolute inset-[-16px] sm:inset-[-40px] z-50 flex flex-col items-center justify-center bg-card/95"
           >
             <motion.div
               initial={{ scale: 0.9, y: 20 }}
@@ -69,7 +69,7 @@ export function SnakeLadderArena({
       </AnimatePresence>
 
       {/* Board */}
-      <div className="grid grid-cols-10 gap-0.5 sm:gap-1 bg-secondary/30 p-1 sm:p-2 rounded-xl border border-border w-full aspect-square max-w-[300px] sm:max-w-[500px]">
+      <div className="grid grid-cols-10 gap-0.5 sm:gap-1 bg-raised p-1 sm:p-2 rounded-xl w-full aspect-square max-w-[300px] sm:max-w-[500px]">
         {Array.from({ length: 100 }, (_, i) => {
           const cellNum = 100 - i;
           const row = Math.floor((cellNum - 1) / 10);
@@ -88,15 +88,15 @@ export function SnakeLadderArena({
             <div
               key={displayNum}
               title={title}
-              className={`relative flex items-center justify-center text-[7px] sm:text-[9px] rounded-sm aspect-square ${
+              className={`relative flex items-center justify-center text-[8px] sm:text-[10px] rounded-sm aspect-square ${
                 ladderTo
-                  ? 'bg-success/25'
+                  ? 'bg-[#222a10]'
                   : snakeTo
-                    ? 'bg-destructive/25'
-                    : displayNum % 2 === 0 ? 'bg-secondary/40' : 'bg-secondary/70'
+                    ? 'bg-[#2c1a20]'
+                    : displayNum % 2 === 0 ? 'bg-card' : 'bg-secondary'
               }`}
             >
-              <span className="absolute top-0 left-0.5 text-muted-foreground/60">{displayNum}</span>
+              <span className="absolute top-0 left-0.5 text-faint">{displayNum}</span>
               {ladderTo && <ArrowUp className="w-3 h-3 sm:w-5 sm:h-5 text-success" aria-hidden />}
               {snakeTo && <ArrowDown className="w-3 h-3 sm:w-5 sm:h-5 text-destructive" aria-hidden />}
 
@@ -105,7 +105,7 @@ export function SnakeLadderArena({
                   <motion.div
                     key={p.playerUid}
                     layoutId={p.playerUid}
-                    className={`w-2.5 h-2.5 sm:w-3.5 sm:h-3.5 rounded-full border border-white shadow ${p.playerUid === playerUid ? 'bg-primary z-10' : 'bg-accent'}`}
+                    className={`w-2.5 h-2.5 sm:w-3.5 sm:h-3.5 rounded-full ring-1 ring-black ${p.playerUid === playerUid ? 'bg-accent z-10' : 'bg-white'}`}
                     title={p.name}
                   />
                 ))}
@@ -124,7 +124,7 @@ export function SnakeLadderArena({
         </span>
         {players.map((p) => (
           <span key={p.playerUid} className="flex items-center gap-1.5">
-            <span className={`w-2.5 h-2.5 rounded-full ${p.playerUid === playerUid ? 'bg-primary' : 'bg-accent'}`} />
+            <span className={`w-2.5 h-2.5 rounded-full ${p.playerUid === playerUid ? 'bg-accent' : 'bg-white'}`} />
             {p.playerUid === playerUid && isPlayer ? 'You' : p.name} · {positions[p.playerUid] || 1}
           </span>
         ))}
@@ -154,7 +154,7 @@ export function SnakeLadderArena({
         </div>
 
         {logs.length > 0 && (
-          <div className="w-full bg-secondary/30 rounded-lg p-2 sm:p-3 max-h-[80px] sm:max-h-[100px] overflow-y-auto">
+          <div className="w-full bg-secondary rounded-lg p-2 sm:p-3 max-h-[80px] sm:max-h-[100px] overflow-y-auto">
             {logs.map((log: string, i: number) => (
               <p key={i} className="text-xs text-muted-foreground mb-1 last:mb-0 text-left">
                 {log}

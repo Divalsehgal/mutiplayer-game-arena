@@ -14,14 +14,14 @@ const findMove = (move?: string | null) => MOVES.find((m) => m.value === move);
 function MoveSlot({ move }: { move?: string | null }) {
   const found = findMove(move);
   return (
-    <div className="w-24 h-24 sm:w-32 sm:h-32 rounded-2xl flex items-center justify-center mb-4 sm:mb-6 bg-secondary/50 border border-border">
+    <div className="w-24 h-24 sm:w-32 sm:h-32 rounded-2xl flex items-center justify-center mb-4 sm:mb-6 bg-secondary">
       {found ? (
         <motion.span initial={{ scale: 0.6 }} animate={{ scale: 1 }} className="flex flex-col items-center gap-1">
           <found.Icon className="w-12 h-12 sm:w-16 sm:h-16" aria-hidden />
           <span className="text-sm font-medium">{found.value}</span>
         </motion.span>
       ) : (
-        <span className="text-4xl text-muted-foreground/40" aria-hidden>?</span>
+        <span className="text-4xl text-faint" aria-hidden>?</span>
       )}
     </div>
   );
@@ -61,7 +61,7 @@ export function RPSArena({
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            className="absolute inset-[-16px] sm:inset-[-40px] z-50 flex flex-col items-center justify-center bg-background/90 backdrop-blur-sm"
+            className="absolute inset-[-16px] sm:inset-[-40px] z-50 flex flex-col items-center justify-center bg-card/95"
           >
             <motion.div
               initial={{ scale: 0.9, y: 20 }}

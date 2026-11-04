@@ -18,7 +18,7 @@ export const snakeLadderGameHandler = {
     const state = gameState as SnakeLadderState;
     const players = room.players.filter((p) => p.role === "player");
     
-    // Critical: Require at least 2 players to start
+    // Require at least 2 players to start
     if (players.length < 2) {
       return { newGameState: gameState };
     }
@@ -44,12 +44,13 @@ export const snakeLadderGameHandler = {
         };
     }
 
-    if (!readyPlayers.includes(playerUid)) {
-        readyPlayers.push(playerUid);
-    }
+    // A rematch vote only counts once the game is over.
+    if (currentStatus !== 'finished') return { newGameState: state };
+
+    const nextReady = readyPlayers.includes(playerUid) ? readyPlayers : [...readyPlayers, playerUid];
 
     // Logic for re-start (rematch)
-    if (readyPlayers.length >= players.length) {
+    if (nextReady.length >= players.length) {
         const positions: Record<string, number> = {};
         players.forEach((p) => (positions[p.playerUid] = 1));
 
@@ -70,14 +71,14 @@ export const snakeLadderGameHandler = {
     return {
       newGameState: {
         ...state,
-        readyPlayers
+        readyPlayers: nextReady
       }
     };
   },
 
   handleMove({ room, gameState, playerUid }: { room: Room; gameState: GameState; playerUid: string }) {
     const state = gameState as SnakeLadderState;
-    // Critical: Stop game if any player leaves
+    // Stop game if any player leaves
     const players = room.players.filter((p) => p.role === "player");
     if (players.length < 2) {
       return {

@@ -3,15 +3,15 @@ import http from "node:http";
 import cors from "cors";
 import { Server } from "socket.io";
 import cookieParser from "cookie-parser"
+import helmet from "helmet";
 import mongoose from 'mongoose'
 import dotenv from 'dotenv'
 
 dotenv.config();
 
 // Config
-import { PORT, CORS_ORIGIN, ROOM_IDLE_MS, GRACE_PERIOD_MS } from "./src/config";
+import { PORT, CORS_ORIGIN, ROOM_IDLE_MS, GRACE_PERIOD_MS, isAllowedSocketOrigin } from "./src/config";
 
-// ... (rest of the imports)
 // Repositories
 import { RoomRepository } from "./src/repositories/room";
 
@@ -29,6 +29,13 @@ import authRouter from "./src/routes/auth";
 import userRouter from "./src/routes/user";
 
 const app = express();
+app.disable("x-powered-by");
+// Behind a load balancer, req.ip (used by the auth rate limiter) is only the client's IP if we trust its hops.
+if (process.env.TRUST_PROXY) app.set("trust proxy", Number(process.env.TRUST_PROXY));
+app.use(helmet());
+
+// Strip $-operators from query filters so request data can never become a NoSQL operator.
+mongoose.set("sanitizeFilter", true);
 
 const normalizeRequestOrigin = (value: string | undefined) => value?.replace(/\/+$|\/+?(?=\?|#|$)/g, "") ?? undefined;
 
@@ -63,16 +70,18 @@ const io = new Server(server, {
         methods: ["GET", "POST"],
         credentials: true,
     },
-    // Industry standard: Detect dead connections faster (default: 20s/45s)
+    // Detect dead connections faster than the defaults (25s/20s)
     pingInterval: 10000, // 10s
     pingTimeout: 20000,  // 20s
+    // CORS doesn't cover WebSocket upgrades, so check the origin ourselves (cross-site WebSocket hijacking).
+    allowRequest: (req, callback) => callback(null, isAllowedSocketOrigin(req.headers.origin)),
 });
 
 // In-memory room repository
 const roomStore = new RoomRepository();
 
 // Attach all socket events + game routing
-initSocket({
+const { roomController } = initSocket({
     io,
     roomStore,
     gameRegistry,
@@ -102,13 +111,10 @@ setInterval(() => {
 }, 10 * 1000);
 
 setInterval(() => {
-    const removals = roomStore.cleanupDisconnectedPlayers(GRACE_PERIOD_MS);
-    removals.forEach(({ roomId, playerUid }: { roomId: string, playerUid: string }) => {
+    // Same path as an explicit leave, so turns, ready lists and the bot timer stay consistent.
+    roomStore.getExpiredDisconnectedPlayers(GRACE_PERIOD_MS).forEach(({ roomId, playerUid }) => {
         logger.info(`Grace period expired for ${playerUid} in room ${roomId}. Removing.`);
-        const room = roomStore.getRoom(roomId);
-        if (room) {
-            io.to(roomId).emit("room-update", roomStore.serializeRoom(roomId));
-        }
+        roomController.removePlayer(roomId, playerUid);
     });
 }, 5000); // Check every 5s
 
@@ -132,5 +138,24 @@ async function startServer() {
         process.exit(1);
     }
 }
+
+process.on("unhandledRejection", (reason) => {
+    logger.error("Unhandled promise rejection:", reason);
+});
+
+process.on("uncaughtException", (error) => {
+    logger.error("Uncaught exception, shutting down:", error);
+    process.exit(1);
+});
+
+process.on("SIGTERM", () => {
+    logger.info("SIGTERM received, shutting down.");
+    io.close();
+    server.close(() => {
+        mongoose.disconnect().finally(() => process.exit(0));
+    });
+    // Don't hang forever on lingering connections.
+    setTimeout(() => process.exit(1), 10 * 1000).unref();
+});
 
 startServer();

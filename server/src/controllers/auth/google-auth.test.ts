@@ -12,7 +12,7 @@ jest.mock('../../models/user');
 
 jest.mock('google-auth-library', () => {
     const mockVerify = jest.fn().mockResolvedValue({
-        getPayload: () => ({ email: 'test@gmail.com', name: 'Test', sub: 'google123', picture: 'pic' })
+        getPayload: () => ({ email: 'test@gmail.com', email_verified: true, name: 'Test', sub: 'google123', picture: 'pic' })
     });
     return {
         OAuth2Client: jest.fn().mockImplementation(() => ({
@@ -84,6 +84,19 @@ describe('GoogleAuthController', () => {
         expect(mockRes.json).toHaveBeenCalledWith(expect.objectContaining({ message: "Invalid Google token payload" }));
     });
 
+    it('should return 401 when Google has not verified the email', async () => {
+        mockReq.body.idToken = 'token';
+        const mockVerify = (new OAuth2Client()).verifyIdToken;
+        for (const email_verified of [false, undefined]) {
+            (mockVerify as jest.Mock).mockResolvedValueOnce({
+                getPayload: () => ({ email: 'victim@example.com', email_verified, sub: 'g1' })
+            });
+            await googleAuthHandler(mockReq, mockRes);
+            expect(mockRes.status).toHaveBeenLastCalledWith(401);
+        }
+        expect(AuthModel.findOne).not.toHaveBeenCalled();
+    });
+
     it('should handle existing auth but missing user', async () => {
         mockReq.body.idToken = 'token';
         const mockAuth = { _id: 'a1', save: jest.fn(), getJWT: jest.fn().mockReturnValue({ accessToken: 'a', refreshToken: 'r' }) };
@@ -125,7 +138,7 @@ describe('GoogleAuthController', () => {
         mockReq.body.idToken = 'token';
         const mockVerify = (new OAuth2Client()).verifyIdToken;
         (mockVerify as jest.Mock).mockResolvedValueOnce({
-            getPayload: () => ({ email: 'no_name@test.com' }) // no name
+            getPayload: () => ({ email: 'no_name@test.com', email_verified: true }) // no name
         });
         
         (AuthModel.findOne as jest.Mock).mockResolvedValue(null);

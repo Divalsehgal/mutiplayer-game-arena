@@ -1,8 +1,10 @@
 import jwt from "jsonwebtoken";
+import { createHash, createHmac, randomUUID, timingSafeEqual } from "node:crypto";
 
 type TokenKind = "access" | "refresh";
 
-const DEFAULT_SECRETS: Record<TokenKind, string> = {
+// Only the test suite may run without real secrets.
+const TEST_SECRETS: Record<TokenKind, string> = {
     access: "access_secret_key",
     refresh: "refresh_secret_key",
 };
@@ -18,11 +20,11 @@ export const getTokenSecret = (kind: TokenKind) => {
 
     if (secret) return secret;
 
-    if (process.env.NODE_ENV === "production") {
-        throw new Error(`${envKey} must be set in production`);
+    if (process.env.NODE_ENV !== "test") {
+        throw new Error(`${envKey} must be set`);
     }
 
-    return DEFAULT_SECRETS[kind];
+    return TEST_SECRETS[kind];
 };
 
 export const signAccessToken = (payload: object) =>
@@ -36,3 +38,25 @@ export const verifyAccessToken = <T>(token: string) =>
 
 export const verifyRefreshToken = <T>(token: string) =>
     jwt.verify(token, getTokenSecret("refresh")) as T;
+
+// Sessions store only a digest, so a leaked sessions collection can't be replayed.
+export const hashToken = (token: string) => createHash("sha256").update(token).digest("hex");
+
+// Guest tokens are "<id>.<hmac>", deliberately not JWTs so they can never pass as an access token.
+const signGuestId = (id: string) =>
+    `${id}.${createHmac("sha256", getTokenSecret("access")).update(`guest-token:${id}`).digest("base64url")}`;
+
+export const issueGuestToken = () => {
+    const playerUid = `guest:${randomUUID()}`;
+    return { playerUid, token: signGuestId(playerUid) };
+};
+
+export const verifyGuestToken = (token: unknown): string | null => {
+    if (typeof token !== "string") return null;
+    const dot = token.lastIndexOf(".");
+    if (dot <= 0) return null;
+    const id = token.slice(0, dot);
+    const expected = Buffer.from(signGuestId(id));
+    const actual = Buffer.from(token);
+    return actual.length === expected.length && timingSafeEqual(actual, expected) ? id : null;
+};

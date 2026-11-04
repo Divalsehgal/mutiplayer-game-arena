@@ -1,5 +1,6 @@
 import { initSocket } from "./index";
 import jwt from "jsonwebtoken";
+import { issueGuestToken } from "../utils/authTokens";
 
 jest.mock("jsonwebtoken");
 
@@ -45,24 +46,25 @@ describe("Socket Auth Middleware", () => {
         expect(mockLogger.error).toHaveBeenCalled();
     });
 
-    it("should fall back to playerUid if no token", () => {
-        const socket: any = { handshake: { auth: { playerUid: "anon1" } }, data: {} };
-        const next = jest.fn();
-
-        middleware(socket, next);
-        
-        expect(socket.data.playerUid).toBe("guest:anon1");
-        expect(next).toHaveBeenCalledWith();
-    });
-
-    it("should fail if no token and no playerUid", () => {
+    it("mints a server-issued guest id when there is no token", () => {
         const socket: any = { handshake: { auth: {} }, data: {} };
         const next = jest.fn();
 
         middleware(socket, next);
-        
-        expect(next).toHaveBeenCalledWith(expect.any(Error));
-        expect(mockLogger.error).toHaveBeenCalled();
+
+        expect(socket.data.playerUid).toMatch(/^guest:[0-9a-f-]{36}$/);
+        expect(socket.data.guestToken).toEqual(expect.any(String));
+        expect(next).toHaveBeenCalledWith();
+    });
+
+    it("reuses the guest id from a valid server-signed guest token", () => {
+        const { playerUid, token } = issueGuestToken();
+        const socket: any = { handshake: { auth: { guestToken: token } }, data: {} };
+
+        middleware(socket, jest.fn());
+
+        expect(socket.data.playerUid).toBe(playerUid);
+        expect(socket.data.guestToken).toBeUndefined();
     });
 
     it("should authenticate with the access_token cookie when no token is passed", () => {
@@ -91,14 +93,16 @@ describe("Socket Auth Middleware", () => {
         middleware(socket, next);
 
         expect(jwt.verify).not.toHaveBeenCalled();
-        expect(socket.data.playerUid).toBe("guest:anon2");
+        expect(socket.data.playerUid).toMatch(/^guest:/);
     });
 
-    it("should never let a guest claim a real account's or the computer's id", () => {
-        for (const claimed of ["507f1f77bcf86cd799439011", "bot-abc12"]) {
-            const socket: any = { handshake: { auth: { playerUid: claimed } }, data: {} };
+    it("should never let a guest claim someone else's id (raw or forged token)", () => {
+        const { playerUid: victim } = issueGuestToken();
+        for (const auth of [{ playerUid: "507f1f77bcf86cd799439011" }, { playerUid: victim }, { guestToken: `${victim}.forged` }]) {
+            const socket: any = { handshake: { auth }, data: {} };
             middleware(socket, jest.fn());
-            expect(socket.data.playerUid).toBe(`guest:${claimed}`);
+            expect(socket.data.playerUid).not.toBe(victim);
+            expect(socket.data.playerUid).not.toBe("507f1f77bcf86cd799439011");
         }
     });
 });

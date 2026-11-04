@@ -15,10 +15,6 @@ export function TicTacToeArena({
   const isMyTurn = currentTurn === playerUid;
   const amIReady = readyPlayers.includes(playerUid);
 
-  if (!board) {
-    console.error("TicTacToe Error: Board is missing from gameState", gameState);
-  }
-
   const canPlay = isMyTurn && isPlayer && !winner;
 
   const handleCellClick = (i: number) => {
@@ -48,7 +44,7 @@ export function TicTacToeArena({
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            className="absolute inset-[-16px] sm:inset-[-40px] z-50 flex flex-col items-center justify-center bg-background/90 backdrop-blur-sm"
+            className="absolute inset-[-16px] sm:inset-[-40px] z-50 flex flex-col items-center justify-center bg-card/95"
           >
             <motion.div
               initial={{ scale: 0.9, y: 20 }}
@@ -82,7 +78,7 @@ export function TicTacToeArena({
         )}
       </AnimatePresence>
 
-      <p className={`text-base font-medium ${isMyTurn && isPlayer ? 'text-primary' : 'text-muted-foreground'}`}>
+      <p className={`text-base font-medium ${isMyTurn && isPlayer ? 'text-accent' : 'text-muted-foreground'}`}>
         {turnText}
       </p>
 
@@ -98,9 +94,9 @@ export function TicTacToeArena({
               whileTap={clickable ? { scale: 0.95 } : {}}
               onClick={() => handleCellClick(i)}
               className={`
-                flex items-center justify-center text-4xl sm:text-5xl font-bold rounded-xl border border-border bg-secondary/40 transition-colors
-                ${clickable ? 'cursor-pointer hover:bg-secondary hover:border-primary/40' : 'cursor-default'}
-                ${cell === 'X' ? 'text-primary' : 'text-destructive'}
+                flex items-center justify-center text-4xl sm:text-5xl font-bold rounded-xl bg-secondary transition-colors
+                ${clickable ? 'cursor-pointer hover:bg-raised' : 'cursor-default'}
+                ${cell === 'X' ? 'text-accent' : 'text-foreground'}
               `}
             >
               <AnimatePresence mode="wait">

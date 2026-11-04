@@ -6,6 +6,7 @@ import { z } from "zod";
 export const updateProfileSchema = z.object({
     avatar: z.string()
         .url("Invalid avatar URL format")
+        .startsWith("https://", "Avatar URL must use https://")
         .optional()
         .or(z.literal("")), // Allow empty string to remove avatar
     bio: z.string()

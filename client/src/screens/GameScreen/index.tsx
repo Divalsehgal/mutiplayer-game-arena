@@ -1,9 +1,8 @@
 import React from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { motion } from "framer-motion";
-import { Card, CardContent } from "../../components/ui/card";
 import { Button } from "../../components/ui/button";
 import { useGameLogic } from "../../hooks/useGameLogic";
+import { usePageMeta } from "../../hooks/usePageMeta";
 
 // Components
 import { InactivityWarning } from "../../components/InactivityWarning";
@@ -22,6 +21,7 @@ const ARENA_COMPONENTS: Record<string, React.ComponentType<BaseArenaProps>> = {
 };
 
 export default function GameScreen() {
+  usePageMeta({ title: "Game", noindex: true });
   const { id: roomId } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const {
@@ -41,19 +41,16 @@ export default function GameScreen() {
 
   if (room === null)
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center p-6 text-center">
-        <h2 className="text-2xl font-semibold mb-2">This game has ended</h2>
-        <p className="text-muted-foreground mb-6 max-w-sm">
-          The room was closed, or the link isn't valid anymore.
-        </p>
-        <Button onClick={() => navigate("/")}>Back to lobby</Button>
+      <div className="flex flex-1 flex-col items-center justify-center p-6 text-center">
+        <h1 className="mb-6 text-2xl font-semibold">This game has ended</h1>
+        <Button onClick={() => navigate("/play")}>Back to games</Button>
       </div>
     );
 
   if (!room || !room.gameState)
     return (
-      <div className="flex min-h-screen items-center justify-center">
-        <div className="animate-spin rounded-full h-10 w-10 border-2 border-primary/30 border-t-primary"></div>
+      <div className="flex flex-1 items-center justify-center">
+        <div className="h-8 w-8 animate-spin rounded-full border-2 border-raised border-t-white" />
       </div>
     );
 
@@ -75,27 +72,21 @@ export default function GameScreen() {
   const ArenaComponent = ARENA_COMPONENTS[room.gameType];
 
   return (
-    <div className="flex flex-col items-center min-h-screen p-4 sm:p-8">
+    <div className="mx-auto w-full max-w-3xl px-4 py-6 sm:px-8 sm:py-10">
       <InactivityWarning
         ttlWarning={ttlWarning}
         onExtend={handleExtendSession}
       />
 
-      <motion.div
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="w-full max-w-4xl"
-      >
+      <h1 className="sr-only">Game</h1>
         <GameHeader
           room={room}
-          playerUid={playerUid}
           player={watchPlayer1}
           opponent={watchPlayer2}
           isSpectator={isSpectator}
         />
 
-        <Card className="overflow-hidden">
-          <CardContent className="p-4 sm:p-10 flex flex-col items-center w-full min-h-[300px] sm:min-h-[400px] justify-center relative">
+        <div className="relative flex min-h-[300px] w-full flex-col items-center justify-center overflow-hidden rounded-xl bg-card p-4 sm:min-h-[400px] sm:p-10">
             {ArenaComponent ? (
               <ArenaComponent
                 room={room}
@@ -114,19 +105,13 @@ export default function GameScreen() {
                 This game isn't available yet.
               </p>
             )}
-          </CardContent>
-        </Card>
+        </div>
 
-        <div className="flex justify-center mt-8">
-          <Button
-            variant="outline"
-            className="hover:text-destructive hover:border-destructive/40"
-            onClick={handleLeave}
-          >
+        <div className="mt-6 flex justify-center">
+          <Button variant="ghost" onClick={handleLeave}>
             Leave game
           </Button>
         </div>
-      </motion.div>
     </div>
   );
 }

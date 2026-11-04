@@ -1,9 +1,8 @@
-import { motion } from 'framer-motion';
 import { RoomState, Participant, GameState, isPlayer, hasRoundCount } from '../../types';
+import { GAME_NAMES } from '../../constants/gameConstants';
 
 interface GameHeaderProps {
   room: RoomState | null | undefined;
-  playerUid: string;
   player: Participant | undefined;
   opponent: Participant | undefined;
   isSpectator?: boolean;
@@ -17,35 +16,26 @@ export function GameHeader({ room, player, opponent, isSpectator }: GameHeaderPr
   const player2Score = opponent && isPlayer(opponent) ? opponent.score : 0;
 
   return (
-    <div className="flex justify-between items-center w-full px-4 sm:px-8 py-4 bg-card border border-border rounded-2xl mb-6">
-      <div className="flex flex-col items-start min-w-0">
-        <span className="text-xs sm:text-sm text-muted-foreground truncate max-w-[100px] sm:max-w-none">
+    <div className="mb-4 flex w-full items-center justify-between gap-4 rounded-xl bg-card px-5 py-4 sm:px-6">
+      <div className="flex min-w-0 flex-col items-start">
+        <span className="max-w-[110px] truncate text-sm text-muted-foreground sm:max-w-none">
           {player?.name || 'Player 1'}{!isSpectator && ' (you)'}
         </span>
-        <motion.span key={player1Score} initial={{ scale: 1.2 }} animate={{ scale: 1 }} className="text-3xl sm:text-4xl font-bold tabular-nums">
-          {player1Score || 0}
-        </motion.span>
+        <span className="tabular text-3xl font-semibold text-accent">{player1Score || 0}</span>
       </div>
 
-      <div className="flex flex-col items-center gap-1 mx-2 text-center">
-        {isSpectator && (
-          <span className="text-xs text-accent font-medium">Watching</span>
-        )}
-        {hasRoundCount(gameState) && (
-          <span className="text-sm font-medium">Round {gameState.roundCount}</span>
-        )}
-        {gameState.timer !== undefined && gameState.timer > 0 && (
-          <span className="text-sm font-mono text-muted-foreground tabular-nums">{gameState.timer}s left</span>
-        )}
-      </div>
-
-      <div className="flex flex-col items-end min-w-0 text-right">
-        <span className="text-xs sm:text-sm text-muted-foreground truncate max-w-[100px] sm:max-w-none">
-          {opponent ? opponent.name : 'Waiting for opponent…'}
+      <div className="flex flex-col items-center text-center text-sm">
+        <span className="font-medium">{GAME_NAMES[room.gameType] ?? room.gameType}</span>
+        <span className="text-muted-foreground">
+          {[isSpectator && 'Watching', hasRoundCount(gameState) && `Round ${gameState.roundCount}`].filter(Boolean).join(' · ')}
         </span>
-        <motion.span key={player2Score} initial={{ scale: 1.2 }} animate={{ scale: 1 }} className="text-3xl sm:text-4xl font-bold tabular-nums">
-          {opponent ? player2Score || 0 : '–'}
-        </motion.span>
+      </div>
+
+      <div className="flex min-w-0 flex-col items-end text-right">
+        <span className="max-w-[110px] truncate text-sm text-muted-foreground sm:max-w-none">
+          {opponent ? opponent.name : 'Waiting…'}
+        </span>
+        <span className="tabular text-3xl font-semibold">{opponent ? player2Score || 0 : '–'}</span>
       </div>
     </div>
   );

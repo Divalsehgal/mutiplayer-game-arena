@@ -1,14 +1,11 @@
 import { registerGameRoutes } from './index';
 import { GameController } from '../../controllers/game';
-import { Server } from 'socket.io';
 
 describe('GameRoutes', () => {
-    let mockIo: jest.Mocked<Server>;
     let mockSocket: any;
     let mockController: jest.Mocked<GameController>;
 
     beforeEach(() => {
-        mockIo = {} as any;
         mockSocket = {
             on: jest.fn(),
             id: 'socket-id'
@@ -20,13 +17,13 @@ describe('GameRoutes', () => {
     });
 
     it('should register game events', () => {
-        registerGameRoutes(mockIo, mockSocket, mockController);
+        registerGameRoutes(mockSocket, mockController);
         expect(mockSocket.on).toHaveBeenCalledWith('game-ready', expect.any(Function));
         expect(mockSocket.on).toHaveBeenCalledWith('game-move', expect.any(Function));
     });
 
     it('should delegate to controller', () => {
-        registerGameRoutes(mockIo, mockSocket, mockController);
+        registerGameRoutes(mockSocket, mockController);
 
         const handlers: Record<string, (...args: any[]) => void> = {};
         (mockSocket.on as jest.Mock).mock.calls.forEach(([event, handler]) => {
@@ -36,7 +33,25 @@ describe('GameRoutes', () => {
         handlers['game-ready']({ roomId: 'r1' });
         expect(mockController.handleReady).toHaveBeenCalledWith(mockSocket, { roomId: 'r1' });
 
-        handlers['game-move']({ roomId: 'r1', move: 'X' });
-        expect(mockController.handleMove).toHaveBeenCalledWith(mockSocket, { roomId: 'r1', move: 'X' });
+        handlers['game-move']({ roomId: 'r1', move: 'Rock' });
+        expect(mockController.handleMove).toHaveBeenCalledWith(mockSocket, { roomId: 'r1', move: 'Rock' });
+
+        for (const move of ['4', 4, 'roll']) handlers['game-move']({ roomId: 'r1', move });
+        expect(mockController.handleMove).toHaveBeenCalledTimes(4);
+    });
+
+    it('drops malformed moves without crashing', () => {
+        registerGameRoutes(mockSocket, mockController);
+        const handlers: Record<string, (...args: any[]) => void> = {};
+        (mockSocket.on as jest.Mock).mock.calls.forEach(([event, handler]) => {
+            handlers[event] = handler;
+        });
+
+        for (const bad of [undefined, { roomId: 'r1' }, { roomId: 'r1', move: 'Lizard' }, { roomId: 'r1', move: 1.5 }, { roomId: 'r1', move: { $gt: 1 } }]) {
+            expect(() => handlers['game-move'](bad)).not.toThrow();
+        }
+        handlers['game-ready']({});
+        expect(mockController.handleMove).not.toHaveBeenCalled();
+        expect(mockController.handleReady).not.toHaveBeenCalled();
     });
 });

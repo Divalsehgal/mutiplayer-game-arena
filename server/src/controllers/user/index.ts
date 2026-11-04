@@ -1,6 +1,7 @@
 import { Response } from "express";
 import { AuthRequest } from "../../middlewares/auth.middleware";
 import { UserService } from "../../services/user";
+import { logger } from "../../utils/logger";
 
 const userService = new UserService();
 
@@ -22,8 +23,11 @@ export const getProfileHandler = async (req: AuthRequest, res: Response) => {
         });
     } catch (err) {
         const error = err as Error;
-        const statusCode = error.message === "User not found" ? 404 : 500;
-        res.status(statusCode).json({ success: false, message: error.message });
+        if (error.message === "User not found") {
+            return res.status(404).json({ success: false, message: error.message });
+        }
+        logger.error("Loading profile failed:", error);
+        res.status(500).json({ success: false, message: "Something went wrong" });
     }
 };
 
@@ -44,7 +48,7 @@ export const updateProfileHandler = async (req: AuthRequest, res: Response) => {
             data: updatedProfile 
         });
     } catch (err) {
-        const error = err as Error;
-        res.status(500).json({ success: false, message: error.message });
+        logger.error("Updating profile failed:", err);
+        res.status(500).json({ success: false, message: "Something went wrong" });
     }
 };

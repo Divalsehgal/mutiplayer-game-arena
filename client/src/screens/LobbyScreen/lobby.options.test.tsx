@@ -3,6 +3,7 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import LobbyScreen from './index';
 import { BrowserRouter } from 'react-router-dom';
 import { socket } from '../../api/socket';
+import { useAuthStore } from '../../store/auth';
 
 vi.mock('../../api/socket', () => ({
   socket: {
@@ -12,6 +13,8 @@ vi.mock('../../api/socket', () => ({
   },
   getPlayerUid: () => 'uid123',
 }));
+
+vi.mock('../../store/auth', () => ({ useAuthStore: vi.fn() }));
 
 const mockedNavigate = vi.fn();
 vi.mock('react-router-dom', async () => {
@@ -25,7 +28,7 @@ vi.mock('react-router-dom', async () => {
 describe('LobbyScreen options and open rooms', () => {
     beforeEach(() => {
         vi.clearAllMocks();
-        sessionStorage.clear();
+        vi.mocked(useAuthStore).mockReturnValue({ user: { user_name: 'JOHN' } } as any);
         (socket.emit as any).mockImplementation((event: string, ...args: any[]) => {
             if (event === 'get-public-rooms') {
                 const cb = args[0];
@@ -49,7 +52,6 @@ describe('LobbyScreen options and open rooms', () => {
 
             render(<BrowserRouter><LobbyScreen /></BrowserRouter>);
 
-            fireEvent.change(screen.getByPlaceholderText(/Enter your name/i), { target: { value: 'JOHN' } });
             fireEvent.click(screen.getByRole('button', { name: 'Tic-Tac-Toe' }));
             fireEvent.click(screen.getByRole('button', { name: 'Computer' }));
             fireEvent.click(screen.getByRole('button', { name: 'Start game' }));
@@ -62,23 +64,6 @@ describe('LobbyScreen options and open rooms', () => {
             expect(mockedNavigate).toHaveBeenCalledWith('/game/bot1');
         });
 
-        it("warns instead of opening an empty room when the server can't add a computer", () => {
-            (socket.emit as any).mockImplementation((event: string, ...args: any[]) => {
-                if (event === 'get-public-rooms') args[0]?.({ ok: true, rooms: [] });
-                // An older server ignores vsComputer: the room only has the host in it.
-                if (event === 'create-room') args[1]?.({ ok: true, roomId: 'old1', room: { players: [{ playerUid: 'uid123', name: 'JOHN' }] } });
-            });
-
-            render(<BrowserRouter><LobbyScreen /></BrowserRouter>);
-            fireEvent.change(screen.getByPlaceholderText(/Enter your name/i), { target: { value: 'JOHN' } });
-            fireEvent.click(screen.getByRole('button', { name: 'Computer' }));
-            fireEvent.click(screen.getByRole('button', { name: 'Start game' }));
-
-            expect(screen.getByRole('alert').textContent).toMatch(/couldn't add a computer player/);
-            expect(socket.emit).toHaveBeenCalledWith('leave-room', { roomId: 'old1' });
-            expect(mockedNavigate).not.toHaveBeenCalled();
-        });
-
         it('hides the room privacy choice, since nobody else can join', () => {
             render(<BrowserRouter><LobbyScreen /></BrowserRouter>);
 
@@ -86,7 +71,7 @@ describe('LobbyScreen options and open rooms', () => {
             fireEvent.click(screen.getByRole('button', { name: 'Computer' }));
             expect(screen.queryByText('Who can join')).toBeNull();
 
-            fireEvent.click(screen.getByRole('button', { name: 'Other players' }));
+            fireEvent.click(screen.getByRole('button', { name: 'People' }));
             expect(screen.getByText('Who can join')).toBeDefined();
         });
     });
@@ -94,12 +79,9 @@ describe('LobbyScreen options and open rooms', () => {
     it('creates a private room when "Only with code" is chosen', () => {
         render(<BrowserRouter><LobbyScreen /></BrowserRouter>);
 
-        fireEvent.change(screen.getByPlaceholderText(/Enter your name/i), { target: { value: 'JOHN' } });
+        expect(screen.getByRole('button', { name: 'Anyone', pressed: true })).toBeDefined();
         fireEvent.click(screen.getByRole('button', { name: 'Only with code' }));
-        expect(screen.getByText(/won't be listed/)).toBeDefined();
-        fireEvent.click(screen.getByRole('button', { name: 'Anyone' }));
-        expect(screen.getByText(/listed under Open rooms/)).toBeDefined();
-        fireEvent.click(screen.getByRole('button', { name: 'Only with code' }));
+        expect(screen.getByRole('button', { name: 'Only with code', pressed: true })).toBeDefined();
         fireEvent.click(screen.getByRole('button', { name: /^Create room$/i }));
 
         expect(socket.emit).toHaveBeenCalledWith(
@@ -116,33 +98,22 @@ describe('LobbyScreen options and open rooms', () => {
             if (event === 'join-room') args[1]?.({ ok: false });
         });
         render(<BrowserRouter><LobbyScreen /></BrowserRouter>);
-        fireEvent.change(screen.getByPlaceholderText(/Enter your name/i), { target: { value: 'JOHN' } });
 
         fireEvent.click(screen.getByRole('button', { name: /^Create room$/i }));
         expect(screen.getByRole('alert').textContent).toMatch(/Couldn't create the room/);
 
-        fireEvent.change(screen.getByPlaceholderText(/Room code/i), { target: { value: 'abc' } });
+        fireEvent.change(screen.getByLabelText('Room code'), { target: { value: 'abc' } });
         fireEvent.click(screen.getByRole('button', { name: /^Join$/i }));
         expect(screen.getByRole('alert').textContent).toMatch(/couldn't find that room/);
     });
 
     it('asks for a room code before joining', () => {
         render(<BrowserRouter><LobbyScreen /></BrowserRouter>);
-        fireEvent.change(screen.getByPlaceholderText(/Enter your name/i), { target: { value: 'JOHN' } });
 
         fireEvent.click(screen.getByRole('button', { name: /^Join$/i }));
 
         expect(screen.getByRole('alert').textContent).toBe('Enter a room code to join.');
         expect(socket.emit).not.toHaveBeenCalledWith('join-room', expect.anything(), expect.anything());
-    });
-
-    it('asks for a name before joining', () => {
-        render(<BrowserRouter><LobbyScreen /></BrowserRouter>);
-
-        fireEvent.change(screen.getByPlaceholderText(/Room code/i), { target: { value: 'abc' } });
-        fireEvent.click(screen.getByRole('button', { name: /^Join$/i }));
-
-        expect(screen.getByRole('alert').textContent).toMatch(/Enter a name/);
     });
 
     it('refreshes the open rooms every 10 seconds', () => {
@@ -176,14 +147,14 @@ describe('LobbyScreen options and open rooms', () => {
 
         render(<BrowserRouter><LobbyScreen /></BrowserRouter>);
 
-        const card = screen.getByText('Hosted by Ana').closest('.rounded-2xl') as HTMLElement;
-        expect(card.textContent).toContain('Snakes & Ladders');
-        expect(screen.getByText('1 open')).toBeDefined();
+        const row = screen.getByRole('listitem');
+        expect(row.textContent).toContain('Snakes & Ladders');
+        expect(row.textContent).toContain('Ana · 2/2 players');
         expect(screen.getByRole('button', { name: 'Watch' })).toBeDefined();
     });
 
     it('shows an empty state when there are no open rooms', () => {
         render(<BrowserRouter><LobbyScreen /></BrowserRouter>);
-        expect(screen.getByText('No open rooms right now')).toBeDefined();
+        expect(screen.getByText('No open rooms right now.')).toBeDefined();
     });
 });

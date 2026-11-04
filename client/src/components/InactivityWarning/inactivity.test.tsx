@@ -5,7 +5,7 @@ import { InactivityWarning } from './index';
 describe('InactivityWarning', () => {
     it('should render when ttlWarning is not null', () => {
         render(<InactivityWarning ttlWarning={30} onExtend={vi.fn()} />);
-        expect(screen.getByText(/close in 30s/i)).toBeDefined();
+        expect(screen.getByText((_, el) => el?.tagName === 'P' && el.textContent === 'Room closes in 30s.')).toBeDefined();
         expect(screen.getByText(/Still there\?/i)).toBeDefined();
     });
 

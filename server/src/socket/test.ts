@@ -58,7 +58,7 @@ describe('SocketInit', () => {
             expect(next).toHaveBeenCalledWith();
         });
 
-        it('should allow anonymous if playerUid provided', () => {
+        it('should never trust a client-chosen guest id and mint one instead', () => {
             initSocket({ io: mockIo, roomStore: mockRoomStore, gameRegistry: {}, logger: mockLogger });
             const middleware = mockIo.use.mock.calls[0][0];
             const mockSocket: any = {
@@ -69,23 +69,9 @@ describe('SocketInit', () => {
 
             middleware(mockSocket, next);
             
-            expect(mockSocket.data.playerUid).toBe('guest:anon1');
+            expect(mockSocket.data.playerUid).toMatch(/^guest:[0-9a-f-]{36}$/);
+            expect(mockSocket.data.guestToken).toEqual(expect.any(String));
             expect(next).toHaveBeenCalledWith();
-        });
-
-        it('should fail if no token and no playerUid', () => {
-            initSocket({ io: mockIo, roomStore: mockRoomStore, gameRegistry: {}, logger: mockLogger });
-            const middleware = mockIo.use.mock.calls[0][0];
-            const mockSocket = {
-                handshake: { auth: {} },
-                data: {}
-            };
-            const next = jest.fn();
-
-            middleware(mockSocket, next);
-            
-            expect(next).toHaveBeenCalledWith(expect.any(Error));
-            expect(next.mock.calls[0][0].message).toContain('Authentication required');
         });
     });
 });

@@ -61,7 +61,7 @@ describe('RoomMaintenanceRepository', () => {
         });
         repo.markSocketDisconnected('s1');
         (repo as any).now = () => mockNow + 10000;
-        repo.cleanupDisconnectedPlayers(1000);
+        repo.getExpiredDisconnectedPlayers(1000).forEach((r) => repo.leaveRoom(r));
         expect(room.players.length).toBe(0);
         expect(repo.getRoom(room.id)).toBeNull(); // room deleted if 0 players
     });
@@ -126,7 +126,7 @@ describe('RoomMaintenanceRepository', () => {
             repo.markSocketDisconnected('s1'); // host disconnects
             
             (repo as any).now = () => mockNow + 10000;
-            repo.cleanupDisconnectedPlayers(1000);
+            repo.getExpiredDisconnectedPlayers(1000).forEach((r) => repo.leaveRoom(r));
             
             // room should still exist with 1 player
             expect(room.players.length).toBe(1);
@@ -142,7 +142,7 @@ describe('RoomMaintenanceRepository', () => {
             
             // only 500ms passed, grace period is 1000
             (repo as any).now = () => mockNow + 500;
-            repo.cleanupDisconnectedPlayers(1000);
+            repo.getExpiredDisconnectedPlayers(1000).forEach((r) => repo.leaveRoom(r));
             
             expect(room.players.length).toBe(1);
         });

@@ -14,6 +14,39 @@ interface CreateRoomCardProps {
   loading: boolean;
 }
 
+interface Option<T> {
+  value: T;
+  label: string;
+}
+
+function Segmented<T>({ legend, options, value, onChange }: {
+  legend: string;
+  options: Option<T>[];
+  value: T;
+  onChange: (value: T) => void;
+}) {
+  return (
+    <fieldset>
+      <legend className="mb-2 text-sm text-muted-foreground">{legend}</legend>
+      <div className="flex rounded-full bg-secondary p-1">
+        {options.map((o) => (
+          <button
+            key={o.label}
+            type="button"
+            aria-pressed={value === o.value}
+            onClick={() => onChange(o.value)}
+            className={`flex-1 rounded-full px-3 py-2 text-sm font-medium transition-colors ${
+              value === o.value ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            {o.label}
+          </button>
+        ))}
+      </div>
+    </fieldset>
+  );
+}
+
 export const CreateRoomCard: React.FC<CreateRoomCardProps> = ({
   gameType,
   setGameType,
@@ -26,84 +59,47 @@ export const CreateRoomCard: React.FC<CreateRoomCardProps> = ({
 }) => {
   return (
     <Card>
-      <CardHeader className="pb-3">
-        <CardTitle className="text-xl font-semibold">Create a room</CardTitle>
+      <CardHeader>
+        <CardTitle className="text-lg">New game</CardTitle>
       </CardHeader>
-      <CardContent className="space-y-5">
-        <fieldset className="space-y-2">
-          <legend className="text-sm font-medium mb-2">Game</legend>
-          <div className="grid grid-cols-3 gap-2">
+      <CardContent className="space-y-6">
+        <fieldset>
+          <legend className="mb-2 text-sm text-muted-foreground">Game</legend>
+          <div className="flex flex-col gap-1">
             {Object.entries(GAME_NAMES).map(([type, name]) => (
-              <Button
+              <button
                 key={type}
                 type="button"
-                variant={gameType === type ? "default" : "outline"}
                 aria-pressed={gameType === type}
                 onClick={() => setGameType(type)}
-                className="h-auto min-h-14 py-2 px-2 text-xs leading-tight whitespace-normal"
+                className={`flex items-center justify-between rounded-md px-4 py-3 text-left font-medium transition-colors ${
+                  gameType === type ? 'bg-raised text-foreground' : 'text-muted-foreground hover:bg-secondary hover:text-foreground'
+                }`}
               >
                 {name}
-              </Button>
+                {gameType === type && <span className="h-2 w-2 rounded-full bg-accent" aria-hidden />}
+              </button>
             ))}
           </div>
         </fieldset>
 
-        <fieldset className="space-y-2">
-          <legend className="text-sm font-medium mb-2">Play against</legend>
-          <div className="grid grid-cols-2 gap-2">
-            <Button
-              type="button"
-              variant={!vsComputer ? "default" : "outline"}
-              aria-pressed={!vsComputer}
-              onClick={() => setVsComputer(false)}
-            >
-              Other players
-            </Button>
-            <Button
-              type="button"
-              variant={vsComputer ? "default" : "outline"}
-              aria-pressed={vsComputer}
-              onClick={() => setVsComputer(true)}
-            >
-              Computer
-            </Button>
-          </div>
-        </fieldset>
+        <Segmented
+          legend="Opponent"
+          value={vsComputer}
+          onChange={setVsComputer}
+          options={[{ value: false, label: 'People' }, { value: true, label: 'Computer' }]}
+        />
 
         {!vsComputer && (
-          <fieldset className="space-y-2">
-            <legend className="text-sm font-medium mb-2">Who can join</legend>
-            <div className="grid grid-cols-2 gap-2">
-              <Button
-                type="button"
-                variant={isPublic ? "default" : "outline"}
-                aria-pressed={isPublic}
-                onClick={() => setIsPublic(true)}
-              >
-                Anyone
-              </Button>
-              <Button
-                type="button"
-                variant={!isPublic ? "default" : "outline"}
-                aria-pressed={!isPublic}
-                onClick={() => setIsPublic(false)}
-              >
-                Only with code
-              </Button>
-            </div>
-            <p className="text-xs text-muted-foreground">
-              {isPublic
-                ? 'Your room will be listed under Open rooms.'
-                : "Your room won't be listed. Share the code with friends."}
-            </p>
-          </fieldset>
+          <Segmented
+            legend="Who can join"
+            value={isPublic}
+            onChange={setIsPublic}
+            options={[{ value: true, label: 'Anyone' }, { value: false, label: 'Only with code' }]}
+          />
         )}
 
-        <Button
-          onClick={handleCreateRoom}
-          disabled={loading}
-          className="w-full h-12 text-base"
-        >
+        <Button onClick={handleCreateRoom} disabled={loading} size="lg" className="w-full">
           {vsComputer ? 'Start game' : 'Create room'}
         </Button>
       </CardContent>

@@ -19,7 +19,8 @@ describe('RoomMaintenanceRepository with a computer player', () => {
 
         timedRepo.markSocketDisconnected('s1');
         now += 5000;
-        const removed = timedRepo.cleanupDisconnectedPlayers(1000);
+        const removed = timedRepo.getExpiredDisconnectedPlayers(1000);
+        removed.forEach((r) => timedRepo.leaveRoom(r));
 
         expect(removed).toEqual([{ roomId: room.id, playerUid: 'h1' }]);
         expect(timedRepo.getRoom(room.id)).toBeNull();
@@ -39,7 +40,7 @@ describe('RoomMaintenanceRepository with a computer player', () => {
         timedRepo.addBotPlayer(room.id, 'Computer');
 
         now += 60 * 60 * 1000;
-        expect(timedRepo.cleanupDisconnectedPlayers(1000)).toEqual([]);
+        expect(timedRepo.getExpiredDisconnectedPlayers(1000)).toEqual([]);
         expect(room.players).toHaveLength(2);
     });
 });

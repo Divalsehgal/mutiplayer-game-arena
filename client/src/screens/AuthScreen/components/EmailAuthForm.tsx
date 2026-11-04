@@ -32,11 +32,10 @@ export const EmailAuthForm: React.FC<EmailAuthFormProps> = ({
           <Input
             id="user_name"
             name="user_name"
-            placeholder="What should we call you?"
+            autoComplete="username"
             value={formData.user_name}
             onChange={onChange}
             required
-            className="h-11"
           />
         </div>
       )}
@@ -46,11 +45,10 @@ export const EmailAuthForm: React.FC<EmailAuthFormProps> = ({
           id="email"
           name="email"
           type="email"
-          placeholder="you@example.com"
+          autoComplete="email"
           value={formData.email}
           onChange={onChange}
           required
-          className="h-11"
         />
       </div>
       <div className="space-y-2">
@@ -59,17 +57,23 @@ export const EmailAuthForm: React.FC<EmailAuthFormProps> = ({
           id="password"
           name="password"
           type="password"
-          placeholder="••••••••"
+          autoComplete={isLogin ? "current-password" : "new-password"}
+          minLength={isLogin ? undefined : 8}
           value={formData.password}
           onChange={onChange}
           required
-          className="h-11"
+          aria-describedby={isLogin ? undefined : "password-rules"}
         />
+        {!isLogin && (
+          <p id="password-rules" className="text-sm text-faint">
+            At least 8 characters, with a capital letter and a number.
+          </p>
+        )}
       </div>
       <Button
         type="submit"
         disabled={isLoading}
-        className="w-full h-11 mt-2"
+        className="mt-2 w-full"
       >
         {isLoading ? 'Please wait…' : isLogin ? 'Sign in' : 'Create account'}
       </Button>

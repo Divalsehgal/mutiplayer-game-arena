@@ -74,6 +74,9 @@ export class RoomService {
             const room = this.roomRepository.getRoom(data.roomId);
             if (room && room.status === "waiting-for-players") {
                 this.resetRoomState(data.roomId);
+            } else if (room?.gameState?.readyPlayers) {
+                // A player who left can't count towards a rematch vote.
+                room.gameState = { ...room.gameState, readyPlayers: room.gameState.readyPlayers.filter((uid) => uid !== data.playerUid) };
             }
             this.logger.info(`Player ${data.playerUid} left Room ${data.roomId}`);
         } else {

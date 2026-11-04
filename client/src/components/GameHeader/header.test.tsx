@@ -6,9 +6,9 @@ describe('GameHeader', () => {
     const defaultProps: any = {
         room: { 
             status: 'playing', 
+            gameType: 'TIC_TAC_TOE',
             gameState: { roundCount: 1 } 
         },
-        playerUid: 'u1',
         player: { name: 'Alpha', score: 5, role: 'player' },
         opponent: { name: 'Bravo', score: 3, role: 'player' },
         isSpectator: false
@@ -37,19 +37,19 @@ describe('GameHeader', () => {
     });
 
     it('should render nothing if room or gameState is missing', () => {
-        const { container } = render(<GameHeader room={null} playerUid="u1" player={undefined} opponent={undefined} />);
+        const { container } = render(<GameHeader room={null} player={undefined} opponent={undefined} />);
         expect(container.firstChild).toBeNull();
     });
 
-    it('shows the time left when there is a timer', () => {
-        render(<GameHeader {...defaultProps} room={{ status: 'playing', gameState: { roundCount: 2, timer: 12 } }} />);
-        expect(screen.getByText('12s left')).toBeDefined();
+    it('shows the game name', () => {
+        render(<GameHeader {...defaultProps} />);
+        expect(screen.getByText('Tic-Tac-Toe')).toBeDefined();
     });
 
     it('waits for an opponent and hides round info for games without rounds', () => {
         render(<GameHeader {...defaultProps} opponent={undefined} room={{ status: 'playing', gameState: { board: [] } }} />);
 
-        expect(screen.getByText('Waiting for opponent…')).toBeDefined();
+        expect(screen.getByText('Waiting…')).toBeDefined();
         expect(screen.getByText('–')).toBeDefined();
         expect(screen.queryByText(/Round/)).toBeNull();
     });

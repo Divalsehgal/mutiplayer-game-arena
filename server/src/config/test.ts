@@ -29,4 +29,13 @@ describe("config", () => {
         expect(config.PORT).toBe(4000);
         expect(config.CORS_ORIGIN).toBe("https://arena.example.com");
     });
+
+    it("only lets the configured origin open a socket; no origin only outside production", () => {
+        delete process.env.CORS_ORIGIN;
+        const { isAllowedSocketOrigin } = loadConfig();
+        expect(isAllowedSocketOrigin("http://localhost:5173/")).toBe(true);
+        expect(isAllowedSocketOrigin("https://evil.example.com")).toBe(false);
+        expect(isAllowedSocketOrigin(undefined, true)).toBe(true);
+        expect(isAllowedSocketOrigin(undefined, false)).toBe(false);
+    });
 });

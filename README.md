@@ -58,7 +58,7 @@ Run these inside `client/` or `server/`.
 |---|---|
 | `yarn dev` | Start in development mode |
 | `yarn build` | Production build |
-| `yarn start` | Server only: build, then run `dist/server.js` |
+| `yarn start` | Server only: run `dist/server.js` (run `yarn build` first) |
 | `yarn test` | Run the tests (Vitest on the client, Jest on the server) |
 | `yarn test:coverage` | Tests plus a coverage report across every source file |
 | `yarn lint` | ESLint (files are limited to 200 lines) |

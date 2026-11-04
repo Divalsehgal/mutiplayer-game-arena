@@ -24,7 +24,8 @@ export function useRoomConnection(roomId: string | undefined) {
   // A fresh room means a fresh session - clear any stale takeover state.
   useEffect(() => {
     setSuperseded(false);
-  }, [roomId]);
+    reset();
+  }, [roomId, reset]);
 
   // Countdown for inactivity warning
   useEffect(() => {
@@ -67,6 +68,8 @@ export function useRoomConnection(roomId: string | undefined) {
       setRoom(null);
       return;
     }
+    // Ignore late broadcasts from a room this tab already left.
+    if (updatedRoom.id !== roomId) return;
     setRoom(updatedRoom);
   });
 
@@ -78,7 +81,7 @@ export function useRoomConnection(roomId: string | undefined) {
     const code = (err as { code?: string } | null)?.code;
     if (code === "ROOM_EXPIRED") {
       setRoom(null);
-      navigate('/');
+      navigate('/play');
     }
   });
 
@@ -97,7 +100,7 @@ export function useRoomConnection(roomId: string | undefined) {
     if (!roomId) return;
     socket.emit('leave-room', { roomId });
     reset();
-    navigate('/');
+    navigate('/play');
   };
 
   return {
