@@ -4,3 +4,4 @@ coverage/
 .env
 .DS_Store
 .taste-skill/
+*.tsbuildinfo

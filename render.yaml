@@ -1,0 +1,86 @@
+# Render Blueprint: both services build from the monorepo root so yarn workspaces
+# can link @arena/shared and @arena/config. buildFilter stops a client-only change
+# from redeploying the server and vice versa.
+# Node version comes from .nvmrc.
+services:
+  - type: web
+    name: game-arena-server
+    runtime: node
+    plan: free
+    # --production=false: NODE_ENV=production would otherwise skip the devDependencies (tsc) the build needs.
+    buildCommand: yarn install --frozen-lockfile --production=false && yarn build:server
+    startCommand: yarn workspace @arena/server start
+    healthCheckPath: /
+    buildFilter:
+      paths:
+        - apps/server/**
+        - packages/**
+        - package.json
+        - yarn.lock
+        - .nvmrc
+      ignoredPaths:
+        - "**/*.test.ts"
+        - "**/test.ts"
+        - "**/*.md"
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: TRUST_PROXY
+        value: "1"
+      - key: CORS_ORIGIN
+        sync: false # the static site's URL, e.g. https://game-arena.onrender.com
+      - key: MONGO_DB_URI
+        sync: false
+      - key: DB_NAME
+        value: game-arena
+      - key: JWT_SECRET
+        generateValue: true
+      - key: REFRESH_TOKEN_SECRET
+        generateValue: true
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: GOOGLE_CLIENT_SECRET
+        sync: false
+
+  - type: web
+    name: game-arena-client
+    runtime: static
+    buildCommand: yarn install --frozen-lockfile --production=false && yarn build:client
+    staticPublishPath: apps/client/dist
+    pullRequestPreviewsEnabled: false
+    buildFilter:
+      paths:
+        - apps/client/**
+        - packages/**
+        - package.json
+        - yarn.lock
+        - .nvmrc
+      ignoredPaths:
+        - "**/*.test.ts"
+        - "**/*.test.tsx"
+        - "**/*.md"
+    # SPA fallback. Real files (robots.txt, sitemap.xml, assets) are served first.
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    headers:
+      - path: /assets/*
+        name: Cache-Control
+        value: public, max-age=31536000, immutable
+      - path: /*
+        name: X-Content-Type-Options
+        value: nosniff
+      - path: /*
+        name: Referrer-Policy
+        value: strict-origin-when-cross-origin
+      - path: /*
+        name: X-Frame-Options
+        value: DENY
+    envVars:
+      - key: VITE_SERVER_URL
+        sync: false # the server's URL, e.g. https://game-arena-server.onrender.com
+      - key: VITE_GOOGLE_CLIENT_ID
+        sync: false
+      - key: VITE_SITE_URL
+        sync: false # public URL of this site; used for canonical links, sitemap and robots.txt

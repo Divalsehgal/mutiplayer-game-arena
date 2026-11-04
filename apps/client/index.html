@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Daily Sudoku and quick games with friends · Game Arena</title>
+    <meta name="description" content="Free daily Sudoku and quick real-time games with friends: tic-tac-toe, rock paper scissors and snakes and ladders, in your browser." />
+    <meta name="theme-color" content="#000000" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/site.webmanifest" />
+
+    <!-- Static defaults for scrapers that don't run JS; usePageMeta updates them per route. -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Game Arena" />
+    <meta property="og:locale" content="en_US" />
+    <meta property="og:title" content="Daily Sudoku and quick games with friends · Game Arena" />
+    <meta property="og:description" content="Free daily Sudoku and quick real-time games with friends: tic-tac-toe, rock paper scissors and snakes and ladders, in your browser." />
+    <meta property="og:image" content="%VITE_SITE_URL%/og-image.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="Game Arena: daily Sudoku and quick games with friends" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Daily Sudoku and quick games with friends · Game Arena" />
+    <meta name="twitter:description" content="Free daily Sudoku and quick real-time games with friends: tic-tac-toe, rock paper scissors and snakes and ladders, in your browser." />
+    <meta name="twitter:image" content="%VITE_SITE_URL%/og-image.png" />
+    <meta name="twitter:image:alt" content="Game Arena: daily Sudoku and quick games with friends" />
+
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@graph": [
+          {
+            "@type": "Organization",
+            "@id": "%VITE_SITE_URL%/#organization",
+            "name": "Game Arena",
+            "url": "%VITE_SITE_URL%/",
+            "logo": "%VITE_SITE_URL%/apple-touch-icon.png"
+          },
+          {
+            "@type": "WebSite",
+            "@id": "%VITE_SITE_URL%/#website",
+            "name": "Game Arena",
+            "url": "%VITE_SITE_URL%/",
+            "description": "Free daily Sudoku and quick real-time games with friends.",
+            "inLanguage": "en",
+            "publisher": { "@id": "%VITE_SITE_URL%/#organization" }
+          }
+        ]
+      }
+    </script>
+
+    <!-- Inter is loaded without blocking the first paint; system-ui stands in until it arrives. -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" media="print" onload="this.media='all'" />
+    <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" /></noscript>
+  </head>
+  <body>
+    <!-- Pre-render fallback: what crawlers and no-JS visitors see before React replaces it. -->
+    <div id="root">
+      <div style="max-width:1152px;margin:0 auto;padding:0 32px;font-family:system-ui,sans-serif;color:#fff;background:#000;line-height:1.5">
+        <header style="padding:20px 0">
+          <a href="/" style="color:#fff;font-weight:600;text-decoration:none">Game Arena</a>
+          <nav aria-label="Main" style="display:inline;margin-left:24px">
+            <a href="/play" style="color:#bbb;margin-right:16px">Play</a>
+            <a href="/sudoku" style="color:#bbb">Daily Sudoku</a>
+          </nav>
+        </header>
+        <main style="padding:48px 0">
+          <h1 style="font-size:48px;line-height:1;margin:0 0 24px">Quick games with friends</h1>
+          <p style="font-size:18px;max-width:40ch">Play tic-tac-toe, rock paper scissors or snakes and ladders in real time, or solve today's Sudoku. It all runs in your browser.</p>
+          <p><a href="/play" style="color:#c6f24e">Play with friends</a> · <a href="/sudoku" style="color:#c6f24e">Today's Sudoku</a></p>
+          <h2>Three games for two players</h2>
+          <ul>
+            <li>Tic-Tac-Toe: three in a row wins, rounds take under a minute.</li>
+            <li>Rock Paper Scissors: you both pick in secret and the moves show together.</li>
+            <li>Snakes &amp; Ladders: roll, climb the ladders, slide down the snakes; first to square 100 wins.</li>
+          </ul>
+          <h2>Daily Sudoku</h2>
+          <p>A new puzzle every day at midnight, the same for everyone, with no sign-up.</p>
+        </main>
+      </div>
+    </div>
+    <noscript><p style="color:#fff;background:#000;padding:16px;font-family:system-ui,sans-serif">Game Arena needs JavaScript to run the games.</p></noscript>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

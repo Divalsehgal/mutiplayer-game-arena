@@ -1,0 +1,7 @@
+{
+  "name": "@arena/config",
+  "version": "1.0.0",
+  "private": true,
+  "description": "TypeScript, Jest and ESLint config shared by every workspace",
+  "files": ["tsconfig.base.json", "jest-preset.js", "eslint-base.cjs"]
+}

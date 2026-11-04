@@ -1,6 +1,6 @@
 {
   "version": "0.0.1",
   "configurations": [
-    { "name": "client", "runtimeExecutable": "yarn", "runtimeArgs": ["--cwd", "client", "dev", "--port", "5173", "--strictPort"], "port": 5173 }
+    { "name": "client", "runtimeExecutable": "yarn", "runtimeArgs": ["workspace", "@arena/client", "dev", "--port", "5173", "--strictPort"], "port": 5173 }
   ]
 }

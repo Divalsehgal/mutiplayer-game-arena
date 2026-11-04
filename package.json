@@ -1,31 +1,37 @@
 {
-  "name": "mutiplayer-rpc-1",
+  "name": "game-arena",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "private": true,
+  "description": "Real-time multiplayer game arena: React client, Express + Socket.IO server, shared packages",
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "engines": {
+    "node": ">=22 <24"
+  },
   "scripts": {
-    "lint:client": "cd client && yarn lint",
-    "lint:server": "cd server && yarn lint",
-    "test:client": "cd client && yarn test",
-    "test:server": "cd server && yarn test",
-    "lint": "yarn lint:client && yarn lint:server",
-    "test": "yarn test:client && yarn test:server",
-    "validate": "yarn lint && yarn test",
+    "dev:client": "yarn workspace @arena/client dev",
+    "dev:server": "yarn workspace @arena/server dev",
+    "build:shared": "yarn workspace @arena/shared build",
+    "build:client": "yarn build:shared && yarn workspace @arena/client build",
+    "build:server": "yarn build:shared && yarn workspace @arena/server build",
+    "build": "yarn build:shared && yarn workspace @arena/client build && yarn workspace @arena/server build",
+    "lint": "yarn workspace @arena/shared lint && yarn workspace @arena/client lint && yarn workspace @arena/server lint",
+    "typecheck": "yarn build:shared && yarn workspace @arena/shared typecheck && yarn workspace @arena/client typecheck && yarn workspace @arena/server typecheck",
+    "test": "yarn workspace @arena/shared test && yarn workspace @arena/client test && yarn workspace @arena/server test",
+    "test:coverage": "yarn workspace @arena/shared test:coverage && yarn workspace @arena/client test:coverage && yarn workspace @arena/server test:coverage",
+    "validate": "yarn lint && yarn typecheck && yarn test",
     "prepare": "husky"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/Divalsehgal/mutiplayer-rpc.git"
+    "url": "git+https://github.com/Divalsehgal/mutiplayer-game-arena.git"
   },
-  "keywords": [],
-  "author": "",
   "license": "ISC",
-  "type": "commonjs",
-  "bugs": {
-    "url": "https://github.com/Divalsehgal/mutiplayer-rpc/issues"
-  },
-  "homepage": "https://github.com/Divalsehgal/mutiplayer-rpc#readme",
   "devDependencies": {
-    "husky": "^9.1.7"
+    "husky": "^9.1.7",
+    "tsx": "^4.21.0",
+    "typescript": "^5.9.3"
   }
 }

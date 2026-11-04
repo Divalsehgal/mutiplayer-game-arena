@@ -1,0 +1,105 @@
+@import "tailwindcss";
+
+/* True-black flat: elevation by lightness only, no borders/shadows on resting cards,
+   the primary action is a white pill, the lime accent is for game marks only. */
+@theme {
+  --color-*: initial;
+  --shadow-*: initial;
+
+  --color-transparent: transparent;
+  --color-current: currentColor;
+  --color-white: #ffffff;
+  --color-black: #000000;
+
+  --color-background: #000000;
+  --color-foreground: #ffffff;
+  --color-card: #111111;
+  --color-card-foreground: #ffffff;
+  --color-secondary: #1f1f1f;
+  --color-secondary-foreground: #ffffff;
+  --color-raised: #2a2a2a;
+  --color-muted: #1a1a1a;
+  --color-muted-foreground: #b4b4b4;
+  --color-faint: #949494;
+
+  --color-primary: #ffffff;
+  --color-primary-foreground: #000000;
+  --color-accent: #c6f24e;
+  --color-accent-foreground: #000000;
+  --color-success: #c6f24e;
+  --color-warning: #e5a93b;
+  --color-destructive: #e5484d;
+  --color-destructive-foreground: #ffffff;
+
+  --color-border: #262626;
+  --color-input: #2a2a2a;
+  --color-ring: #c6f24e;
+
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 14px;
+  --radius-xl: 20px;
+  --radius-2xl: 20px;
+
+  --shadow-pop: 0 12px 40px rgb(0 0 0 / 0.6);
+
+  --font-sans: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+/* One frame for every page: the header, content and footer share these margins. */
+@utility page-frame {
+  @apply mx-auto w-full max-w-6xl px-4 sm:px-8;
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  html {
+    color-scheme: dark;
+  }
+  body {
+    @apply bg-background text-foreground font-sans antialiased overflow-x-hidden;
+    font-size: 16px;
+  }
+  :focus-visible {
+    outline: 2px solid var(--color-ring);
+    outline-offset: 2px;
+  }
+  .tabular {
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+/* Entrance for <Reveal>: rise 24px and fade, once. Content stays visible without motion. */
+.reveal {
+  transition: opacity 500ms ease-out, transform 500ms ease-out;
+}
+.reveal[data-shown="false"] {
+  opacity: 0;
+  transform: translateY(24px);
+}
+
+/* The waiting cursor in the game previews: the square or piece it's your turn to play. */
+@keyframes turn-pulse {
+  50% {
+    opacity: 0.45;
+  }
+}
+.turn-pulse {
+  animation: turn-pulse 1.6s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reveal[data-shown="false"] {
+    opacity: 1;
+    transform: none;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}

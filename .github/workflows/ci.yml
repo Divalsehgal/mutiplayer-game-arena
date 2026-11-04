@@ -1,0 +1,56 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    name: Lint, typecheck, test, build
+    runs-on: ubuntu-latest
+    env:
+      SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Sonar needs full history for blame and new-code detection
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: yarn
+
+      - run: yarn install --frozen-lockfile
+
+      - run: yarn lint
+      - run: yarn typecheck
+      - name: Test with coverage (fails under the thresholds)
+        run: yarn test:coverage
+      - run: yarn build
+        env:
+          VITE_SITE_URL: https://example.com
+
+      - name: Make coverage paths repo-relative for Sonar
+        run: |
+          sed -i 's#^SF:#SF:apps/client/#' apps/client/coverage/lcov.info
+          sed -i 's#^SF:#SF:apps/server/#' apps/server/coverage/lcov.info
+          sed -i 's#^SF:#SF:packages/shared/#' packages/shared/coverage/lcov.info
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: coverage
+          path: |
+            apps/client/coverage/lcov.info
+            apps/server/coverage/lcov.info
+            packages/shared/coverage/lcov.info
+
+      - name: SonarCloud scan
+        if: ${{ env.SONAR_TOKEN != '' }}
+        uses: SonarSource/sonarqube-scan-action@v5
+        env:
+          SONAR_HOST_URL: https://sonarcloud.io

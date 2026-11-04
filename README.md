@@ -4,37 +4,44 @@ A real-time multiplayer game site. Sign in, create a room, and play Rock Paper
 Scissors, Tic-Tac-Toe, or Snakes & Ladders against friends, or against the
 computer.
 
-- **Client:** React, Vite, TypeScript, Tailwind (`client/`)
-- **Server:** Express, Socket.IO, TypeScript, MongoDB for accounts (`server/`)
+A Yarn workspaces monorepo:
+
+- **Client:** React, Vite, TypeScript, Tailwind (`apps/client`, `@arena/client`)
+- **Server:** Express, Socket.IO, TypeScript, MongoDB for accounts (`apps/server`, `@arena/server`)
+- **Shared:** game constants, types and zod schemas used by both (`packages/shared`, `@arena/shared`)
+- **Config:** base tsconfig, Jest preset and ESLint rules (`packages/config`, `@arena/config`)
 
 Games and rooms live in the server's memory. MongoDB only stores accounts and
-sessions. See [`server/README.md`](server/README.md) for why, and what that
+sessions. See [`apps/server/README.md`](apps/server/README.md) for why, and what that
 trades away.
 
 ---
 
 ## Getting started
 
-You need Node 22 (see `.nvmrc`; Node 23 works but some test tools warn about
-it) and Yarn 1.
+You need Node 22 (see `.nvmrc`; `yarn install` refuses Node 23 because jsdom
+doesn't support it) and Yarn 1.
 
 ```bash
-# 1. Install
-cd server && yarn install
-cd ../client && yarn install
+# 1. Install everything once, from the repo root (also builds packages/shared)
+yarn install
 
 # 2. Configure: copy the examples and fill them in
-cp server/.env.example server/.env
-cp client/.env.example client/.env
+cp apps/server/.env.example apps/server/.env
+cp apps/client/.env.example apps/client/.env
 
 # 3. Run (two terminals)
-cd server && yarn dev     # http://localhost:3030, reloads on changes
-cd client && yarn dev     # http://localhost:5173
+yarn dev:server     # http://localhost:3030, reloads on changes
+yarn dev:client     # http://localhost:5173
 ```
 
-Use `yarn dev` for the server while developing. `yarn start` runs the compiled
-build in `server/dist/`. It rebuilds first, but it won't pick up later changes
-until you restart it.
+The server runs `@arena/shared` from its compiled `dist/`. If you change
+`packages/shared`, run `yarn build:shared` (the client and the tests read its
+source directly, so they pick changes up straight away).
+
+Use `yarn dev:server` while developing. `yarn workspace @arena/server start`
+runs the compiled build in `apps/server/dist/` (run `yarn build:server` first),
+and won't pick up later changes until you rebuild and restart it.
 
 The server starts without `MONGO_DB_URI`. Rooms and games still work, but
 signing in doesn't.
@@ -43,8 +50,8 @@ signing in doesn't.
 
 1. Create an OAuth client ID in Google Cloud Console.
 2. Add `http://localhost:5173` to its **Authorized JavaScript origins**.
-3. Put the same client ID in `client/.env` (`VITE_GOOGLE_CLIENT_ID`) and
-   `server/.env` (`GOOGLE_CLIENT_ID`), and the secret in `GOOGLE_CLIENT_SECRET`.
+3. Put the same client ID in `apps/client/.env` (`VITE_GOOGLE_CLIENT_ID`) and
+   `apps/server/.env` (`GOOGLE_CLIENT_ID`), and the secret in `GOOGLE_CLIENT_SECRET`.
 
 If sign-in fails, the server logs the reason as `Google sign-in failed: …`.
 
@@ -52,19 +59,59 @@ If sign-in fails, the server logs the reason as `Google sign-in failed: …`.
 
 ## Commands
 
-Run these inside `client/` or `server/`.
+Run these from the repo root.
 
 | Command | What it does |
 |---|---|
-| `yarn dev` | Start in development mode |
-| `yarn build` | Production build |
-| `yarn start` | Server only: run `dist/server.js` (run `yarn build` first) |
-| `yarn test` | Run the tests (Vitest on the client, Jest on the server) |
-| `yarn test:coverage` | Tests plus a coverage report across every source file |
-| `yarn lint` | ESLint (files are limited to 200 lines) |
+| `yarn dev:client` / `yarn dev:server` | Start one app in development mode |
+| `yarn build` | Build shared, then client and server (`build:client` / `build:server` for one) |
+| `yarn lint` | ESLint in every workspace (files are limited to 200 lines) |
+| `yarn typecheck` | `tsc --noEmit` in every workspace |
+| `yarn test` | Tests everywhere (Vitest on the client, Jest on the server and shared) |
+| `yarn test:coverage` | Tests plus coverage; fails under 95% lines / 90% branches |
+| `yarn validate` | lint + typecheck + test |
 
-From the repo root, `yarn validate` runs lint and tests for both apps. Git hooks
-run `yarn lint` before each commit and `yarn validate` before each push.
+To run one workspace's script: `yarn workspace @arena/server test`.
+Git hooks run `yarn lint` before each commit and `yarn validate` before each push.
+
+---
+
+## Deployment (Render)
+
+[`render.yaml`](render.yaml) is a Render Blueprint for both services. Both build
+from the **repo root** (not `apps/*`), because the workspaces need the root
+`yarn.lock` and `packages/` to link `@arena/shared`.
+
+| Service | Type | Build | Start / publish |
+|---|---|---|---|
+| `game-arena-server` | Web service (Node) | `yarn install --frozen-lockfile --production=false && yarn build:server` | `yarn workspace @arena/server start` |
+| `game-arena-client` | Static site | `yarn install --frozen-lockfile --production=false && yarn build:client` | publish `apps/client/dist` |
+
+`buildFilter` keeps a client-only change from redeploying the server and the
+other way round; a change in `packages/` redeploys both. The static site gets an
+SPA rewrite to `/index.html`, long-lived caching for `/assets/*`, and basic
+security headers.
+
+**Moving existing services over:** either create a Blueprint from `render.yaml`
+(then delete the old services), or edit each existing service by hand: set
+*Root Directory* to empty (repo root), and copy the build/start commands and
+publish path from the table above. Add the static site's rewrite rule
+`/* → /index.html` in its Redirects/Rewrites tab. Env vars marked `sync: false`
+are filled in on the dashboard.
+
+---
+
+## CI and code quality
+
+[`.github/workflows/ci.yml`](.github/workflows/ci.yml) runs on every push to
+`main` and every pull request: lint, typecheck, tests with coverage thresholds,
+and a production build. Coverage reports are uploaded as an artifact.
+
+If a `SONAR_TOKEN` repo secret exists, it also runs a SonarCloud scan using
+[`sonar-project.properties`](sonar-project.properties). To turn it on: import
+the repo in SonarCloud, check `sonar.projectKey` and `sonar.organization` match,
+turn off SonarCloud's *Automatic Analysis* (it conflicts with CI analysis), and
+add the token as `SONAR_TOKEN` under GitHub → Settings → Secrets → Actions.
 
 ---
 
@@ -104,24 +151,30 @@ checks whether it's the computer's turn and plays after a short pause
 - **Snakes & Ladders:** rolls the dice.
 
 It also agrees to every rematch. The room closes when the last person leaves.
-The code is in `server/src/games/bot.ts` (decisions) and
-`server/src/services/bot/` (timing).
+The code is in `apps/server/src/games/bot.ts` (decisions) and
+`apps/server/src/services/bot/` (timing).
 
 ---
 
 ## Project layout
 
 ```
-client/   React app. See client/README.md
-server/   Express + Socket.IO server. See server/README.md
-  docs/auth.md   How accounts, tokens, and Google sign-in work
+apps/
+  client/   React app. See apps/client/README.md
+  server/   Express + Socket.IO server. See apps/server/README.md
+    docs/auth.md   How accounts, tokens, and Google sign-in work
+packages/
+  shared/   @arena/shared: game names, Snakes & Ladders board, zod schemas
+  config/   @arena/config: tsconfig.base.json, jest-preset.js, eslint-base.cjs
+render.yaml                Render Blueprint for both services
+sonar-project.properties   SonarCloud config
 ```
 
 ---
 
 ## Security notes
 
-- Secrets live only in `server/.env`, which git ignores. `client/.env` holds
+- Secrets live only in `apps/server/.env`, which git ignores. `apps/client/.env` holds
   nothing secret (the server URL and the public Google client ID), but is also
   ignored now. Copy from the `.env.example` files.
 - In production (`NODE_ENV=production`), cookies become `Secure` and
@@ -145,5 +198,3 @@ server/   Express + Socket.IO server. See server/README.md
   next refresh.
 - **Joining a second room doesn't leave the first.** Your seat in the old
   room stays taken until you leave it or the 2-minute grace period ends.
-- **No rate limiting on the sign-in routes.** Add it (for example
-  `express-rate-limit`) before exposing the server publicly.
