@@ -9,6 +9,11 @@ concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
 
+permissions:
+  contents: read
+
+# Plain shell steps only: this repo's Actions policy allows no third-party actions
+# (not even actions/checkout), so checkout, Node setup and the Sonar scan are done by hand.
 jobs:
   validate:
     name: Lint, typecheck, test, build
@@ -16,15 +21,22 @@ jobs:
     env:
       SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
     steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0 # Sonar needs full history for blame and new-code detection
+      - name: Checkout
+        env:
+          TOKEN: ${{ github.token }}
+        run: |
+          # Full history: Sonar needs it for blame and new-code detection.
+          git clone --no-checkout "https://x-access-token:${TOKEN}@github.com/${GITHUB_REPOSITORY}.git" .
+          git fetch origin "${GITHUB_SHA}"
+          git checkout --force "${GITHUB_SHA}"
 
-      - uses: actions/setup-node@v4
-        with:
-          node-version-file: .nvmrc
-          cache: yarn
+      - name: Use the Node version from .nvmrc
+        run: |
+          version=$(curl -fsSL https://nodejs.org/dist/index.json | jq -r --arg m "v$(cat .nvmrc)." '[.[] | select(.version | startswith($m))][0].version')
+          curl -fsSL "https://nodejs.org/dist/${version}/node-${version}-linux-x64.tar.xz" | tar -xJ -C "$RUNNER_TEMP"
+          echo "$RUNNER_TEMP/node-${version}-linux-x64/bin" >> "$GITHUB_PATH"
 
+      - run: node --version && corepack enable && yarn --version
       - run: yarn install --frozen-lockfile
 
       - run: yarn lint
@@ -35,22 +47,11 @@ jobs:
         env:
           VITE_SITE_URL: https://example.com
 
-      - name: Make coverage paths repo-relative for Sonar
+      - name: SonarCloud scan
+        if: ${{ env.SONAR_TOKEN != '' }}
         run: |
+          # Make coverage paths repo-relative so Sonar can match them to files.
           sed -i 's#^SF:#SF:apps/client/#' apps/client/coverage/lcov.info
           sed -i 's#^SF:#SF:apps/server/#' apps/server/coverage/lcov.info
           sed -i 's#^SF:#SF:packages/shared/#' packages/shared/coverage/lcov.info
-
-      - uses: actions/upload-artifact@v4
-        with:
-          name: coverage
-          path: |
-            apps/client/coverage/lcov.info
-            apps/server/coverage/lcov.info
-            packages/shared/coverage/lcov.info
-
-      - name: SonarCloud scan
-        if: ${{ env.SONAR_TOKEN != '' }}
-        uses: SonarSource/sonarqube-scan-action@v5
-        env:
-          SONAR_HOST_URL: https://sonarcloud.io
+          npx --yes @sonar/scan -Dsonar.host.url=https://sonarcloud.io

@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "description": "Real-time multiplayer game arena: React client, Express + Socket.IO server, shared packages",
+  "packageManager": "yarn@1.22.22",
   "workspaces": [
     "packages/*",
     "apps/*"
