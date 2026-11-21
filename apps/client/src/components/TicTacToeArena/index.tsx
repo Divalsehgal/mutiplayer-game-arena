@@ -78,11 +78,11 @@ export function TicTacToeArena({
         )}
       </AnimatePresence>
 
-      <p className={`text-base font-medium ${isMyTurn && isPlayer ? 'text-accent' : 'text-muted-foreground'}`}>
+      <p className={`text-lg font-medium ${isMyTurn && isPlayer ? 'text-accent' : 'text-muted-foreground'}`}>
         {turnText}
       </p>
 
-      <div className="grid grid-cols-3 gap-2 w-full max-w-[280px] sm:max-w-[340px] aspect-square">
+      <div className="grid grid-cols-3 gap-2 w-full max-w-[300px] sm:max-w-[420px] lg:max-w-[480px] aspect-square">
         {(board || []).map((cell: string | null, i: number) => {
           const clickable = !cell && canPlay;
           return (
@@ -94,7 +94,7 @@ export function TicTacToeArena({
               whileTap={clickable ? { scale: 0.95 } : {}}
               onClick={() => handleCellClick(i)}
               className={`
-                flex items-center justify-center text-4xl sm:text-5xl font-medium rounded-xl bg-secondary transition-colors
+                flex items-center justify-center text-5xl sm:text-6xl lg:text-7xl font-medium rounded-xl bg-secondary transition-colors
                 ${clickable ? 'cursor-pointer hover:bg-raised' : 'cursor-default'}
                 ${cell === 'X' ? 'text-accent' : 'text-foreground'}
               `}

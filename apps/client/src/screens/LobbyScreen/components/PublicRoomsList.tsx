@@ -14,7 +14,9 @@ export const PublicRoomsList: React.FC<PublicRoomsListProps> = ({ rooms, onJoin 
       <h2 id="open-rooms-title" className="mb-3 text-lg font-semibold">Open rooms</h2>
 
       {rooms.length === 0 ? (
-        <p className="rounded-xl bg-card p-6 text-muted-foreground">No open rooms right now.</p>
+        <p className="rounded-xl bg-card p-6 text-muted-foreground">
+          No open rooms right now. Create one with “Anyone” selected and it shows up here for others to join.
+        </p>
       ) : (
         <ul className="flex flex-col gap-2">
           {rooms.map((room) => {

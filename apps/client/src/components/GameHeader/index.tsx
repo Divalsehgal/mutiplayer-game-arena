@@ -8,35 +8,35 @@ interface GameHeaderProps {
   isSpectator?: boolean;
 }
 
+/** The score slip: a paper tally beside the board, the same paper as the home page's puzzle and receipt. */
 export function GameHeader({ room, player, opponent, isSpectator }: GameHeaderProps) {
   if (!room || !room.gameState) return null;
   const gameState = room.gameState as GameState;
 
   const player1Score = player && isPlayer(player) ? player.score : 0;
   const player2Score = opponent && isPlayer(opponent) ? opponent.score : 0;
+  const meta = [isSpectator && 'Watching', hasRoundCount(gameState) && `Round ${gameState.roundCount}`].filter(Boolean).join(' · ');
+
+  const row = (name: string, score: string | number, mine: boolean) => (
+    <li className="flex items-end gap-2">
+      <span className="min-w-0 truncate">{name}</span>
+      <span aria-hidden className="mb-1.5 min-w-4 flex-1 border-b-4 border-dotted border-[#9a9a9a]" />
+      <span className={`tabular shrink-0 text-4xl font-semibold leading-none ${mine ? 'rounded-sm bg-accent px-1.5' : ''}`}>
+        {score}
+      </span>
+    </li>
+  );
 
   return (
-    <div className="mb-4 flex w-full items-center justify-between gap-4 rounded-xl bg-card px-5 py-4 sm:px-6">
-      <div className="flex min-w-0 flex-col items-start">
-        <span className="max-w-[110px] truncate text-sm text-muted-foreground sm:max-w-none">
-          {player?.name || 'Player 1'}{!isSpectator && ' (you)'}
-        </span>
-        <span className="tabular text-3xl font-semibold text-accent">{player1Score || 0}</span>
+    <div data-ui className="w-full bg-white p-6 text-black">
+      <div className="flex items-baseline justify-between gap-4">
+        <h1 className="text-xl font-semibold">{GAME_NAMES[room.gameType] ?? room.gameType}</h1>
+        {meta && <span className="text-sm text-[#444444]">{meta}</span>}
       </div>
-
-      <div className="flex flex-col items-center text-center text-sm">
-        <span className="font-medium">{GAME_NAMES[room.gameType] ?? room.gameType}</span>
-        <span className="text-muted-foreground">
-          {[isSpectator && 'Watching', hasRoundCount(gameState) && `Round ${gameState.roundCount}`].filter(Boolean).join(' · ')}
-        </span>
-      </div>
-
-      <div className="flex min-w-0 flex-col items-end text-right">
-        <span className="max-w-[110px] truncate text-sm text-muted-foreground sm:max-w-none">
-          {opponent ? opponent.name : 'Waiting…'}
-        </span>
-        <span className="tabular text-3xl font-semibold">{opponent ? player2Score || 0 : '–'}</span>
-      </div>
+      <ul className="mt-6 flex flex-col gap-4">
+        {row(`${player?.name || 'Player 1'}${isSpectator ? '' : ' (you)'}`, player1Score || 0, !isSpectator)}
+        {row(opponent ? opponent.name : 'Waiting…', opponent ? player2Score || 0 : '–', false)}
+      </ul>
     </div>
   );
 }

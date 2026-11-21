@@ -69,7 +69,7 @@ export function SnakeLadderArena({
       </AnimatePresence>
 
       {/* Board */}
-      <div className="grid grid-cols-10 gap-0.5 sm:gap-1 bg-raised p-1 sm:p-2 rounded-xl w-full aspect-square max-w-[300px] sm:max-w-[500px]">
+      <div className="grid grid-cols-10 gap-0.5 sm:gap-1 bg-raised p-1 sm:p-2 rounded-xl w-full aspect-square max-w-[300px] sm:max-w-[500px] lg:max-w-[600px]">
         {Array.from({ length: 100 }, (_, i) => {
           const cellNum = 100 - i;
           const row = Math.floor((cellNum - 1) / 10);
@@ -130,7 +130,7 @@ export function SnakeLadderArena({
         ))}
       </div>
 
-      <div className="flex flex-col items-center gap-3 w-full max-w-[300px] sm:max-w-[500px]">
+      <div className="flex flex-col items-center gap-3 w-full max-w-[300px] sm:max-w-[500px] lg:max-w-[600px]">
         <div className="flex items-center gap-4 w-full justify-between">
           <div className="flex flex-col">
             <span className="text-xs text-muted-foreground">Last roll</span>

@@ -71,46 +71,44 @@ export default function GameScreen() {
   const ArenaComponent = ARENA_COMPONENTS[room.gameType];
 
   return (
-    <div className="mx-auto w-full max-w-3xl px-4 py-6 sm:px-8 sm:py-10">
+    <div className="page-frame grid flex-1 gap-6 py-6 sm:py-10 lg:grid-cols-[320px_minmax(0,1fr)] lg:items-start lg:gap-10">
       <InactivityWarning
         ttlWarning={ttlWarning}
         onExtend={handleExtendSession}
       />
 
-      <h1 className="sr-only">Game</h1>
+      <aside className="flex flex-col gap-4 lg:sticky lg:top-6">
         <GameHeader
           room={room}
           player={watchPlayer1}
           opponent={watchPlayer2}
           isSpectator={isSpectator}
         />
+        <Button variant="ghost" onClick={handleLeave} className="self-start">
+          Leave game
+        </Button>
+      </aside>
 
-        <div className="relative flex min-h-[300px] w-full flex-col items-center justify-center overflow-hidden rounded-xl bg-card p-4 sm:min-h-[400px] sm:p-10">
-            {ArenaComponent ? (
-              <ArenaComponent
-                room={room}
-                gameState={gameState}
-                playerUid={watchPlayer1?.playerUid || playerUid}
-                opponent={watchPlayer2}
-                isPlayer={isPlayer && !isSpectator}
-                isRoundOver={isRoundOver}
-                handleRPSMove={handleRPSMove}
-                handleSnakeLadderMove={handleSnakeLadderMove}
-                handleTicTacToeMove={handleTicTacToeMove}
-                handleNextRound={handleNextRound}
-              />
-            ) : (
-              <p className="text-muted-foreground">
-                This game isn't available yet.
-              </p>
-            )}
-        </div>
-
-        <div className="mt-6 flex justify-center">
-          <Button variant="ghost" onClick={handleLeave}>
-            Leave game
-          </Button>
-        </div>
+      <div className="relative flex min-h-[420px] w-full flex-col items-center justify-center overflow-hidden rounded-2xl bg-card p-4 sm:p-10 lg:min-h-[calc(100svh-144px)]">
+        {ArenaComponent ? (
+          <ArenaComponent
+            room={room}
+            gameState={gameState}
+            playerUid={watchPlayer1?.playerUid || playerUid}
+            opponent={watchPlayer2}
+            isPlayer={isPlayer && !isSpectator}
+            isRoundOver={isRoundOver}
+            handleRPSMove={handleRPSMove}
+            handleSnakeLadderMove={handleSnakeLadderMove}
+            handleTicTacToeMove={handleTicTacToeMove}
+            handleNextRound={handleNextRound}
+          />
+        ) : (
+          <p className="text-muted-foreground">
+            This game isn't available yet.
+          </p>
+        )}
+      </div>
     </div>
   );
 }

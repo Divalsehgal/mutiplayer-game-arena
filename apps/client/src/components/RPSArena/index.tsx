@@ -14,10 +14,10 @@ const findMove = (move?: string | null) => MOVES.find((m) => m.value === move);
 function MoveSlot({ move }: { move?: string | null }) {
   const found = findMove(move);
   return (
-    <div className="w-24 h-24 sm:w-32 sm:h-32 rounded-2xl flex items-center justify-center mb-4 sm:mb-6 bg-secondary">
+    <div className="w-24 h-24 sm:w-32 sm:h-32 lg:w-40 lg:h-40 rounded-2xl flex items-center justify-center mb-4 sm:mb-6 bg-secondary">
       {found ? (
         <motion.span initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.15, ease: "easeOut" }} className="flex flex-col items-center gap-1">
-          <found.Icon className="w-12 h-12 sm:w-16 sm:h-16" aria-hidden />
+          <found.Icon className="w-12 h-12 sm:w-16 sm:h-16 lg:w-20 lg:h-20" aria-hidden />
           <span className="text-sm font-medium">{found.value}</span>
         </motion.span>
       ) : (

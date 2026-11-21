@@ -58,77 +58,86 @@ export default function RoomScreen() {
   };
 
   return (
-    <div className="mx-auto w-full max-w-3xl px-4 py-8 sm:px-8 sm:py-12">
+    <div className="page-frame grid gap-12 py-8 sm:py-12 lg:grid-cols-2 lg:gap-16">
       <InactivityWarning ttlWarning={ttlWarning} onExtend={handleExtendSession} />
 
-      <p className="text-muted-foreground">{GAME_NAMES[room.gameType] ?? room.gameType}</p>
-      <h1 className="mt-1 text-3xl font-semibold tracking-tight sm:text-4xl">Waiting room</h1>
+      <div>
+        <p className="text-muted-foreground">{GAME_NAMES[room.gameType] ?? room.gameType}</p>
+        <h1 className="mt-1 text-3xl font-semibold tracking-tight sm:text-4xl">Waiting room</h1>
 
-      <div className="mt-8 flex items-center justify-between gap-4 rounded-xl bg-card p-5">
-        <div>
-          <p className="text-sm text-muted-foreground">Room code</p>
-          <p className="tabular text-3xl font-semibold tracking-wide">{room.id}</p>
+        <div data-ui className="mt-8 bg-white p-6 text-black sm:p-8">
+          <p className="text-sm text-[#444444]">Room code</p>
+          <p className="tabular mt-2 text-[clamp(56px,7vw,104px)] font-semibold leading-none tracking-tight">{room.id}</p>
+          <p className="mt-6 max-w-[36ch] text-[#333333]">
+            Read it out or send it. Your friend enters it on the Play page and takes the open seat.
+          </p>
+          <button
+            type="button"
+            onClick={copyRoomCode}
+            className="mt-6 inline-flex h-10 items-center gap-2 rounded-full bg-black px-5 text-sm font-medium text-white transition-[background-color,transform] duration-150 hover:bg-[#262626] active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-2 focus-visible:ring-offset-white"
+          >
+            {copied ? <Check className="h-4 w-4 text-accent" aria-hidden /> : <Copy className="h-4 w-4" aria-hidden />}
+            {copied ? 'Copied' : 'Copy'}
+          </button>
         </div>
-        <Button variant="secondary" onClick={copyRoomCode}>
-          {copied ? <Check className="h-4 w-4 text-accent" aria-hidden /> : <Copy className="h-4 w-4" aria-hidden />}
-          {copied ? 'Copied' : 'Copy'}
-        </Button>
       </div>
 
-      <h2 className="mb-3 mt-10 text-lg font-semibold">
-        Players <span className="tabular font-normal text-muted-foreground">{players.length}/{room.maxPlayers}</span>
-      </h2>
-      <ul className="grid gap-2 sm:grid-cols-2">
-        {Array.from({ length: room.maxPlayers }).map((_, idx) => {
-          const p = players[idx];
-          const isMe = p?.playerUid === playerUid;
-          return (
-            <li key={idx} className={`flex items-center gap-4 rounded-xl p-4 ${p ? 'bg-card' : 'bg-card/50'}`}>
-              <div className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-full bg-raised">
-                {p?.avatar ? (
-                  <img src={p.avatar} alt="" className="h-full w-full object-cover" referrerPolicy="no-referrer" />
-                ) : p ? (
-                  <span className="font-semibold">{p.name.charAt(0).toUpperCase()}</span>
-                ) : null}
-              </div>
-              <div className="min-w-0">
-                <p className={`truncate font-medium ${p ? '' : 'text-faint'}`}>{p ? p.name : 'Open seat'}</p>
-                {p && (
-                  <p className="text-sm text-muted-foreground">
-                    {[idx === 0 && 'Host', isMe && 'You', p.status === 'offline' && 'Offline'].filter(Boolean).join(' · ')}
-                  </p>
-                )}
-              </div>
-            </li>
-          );
-        })}
-      </ul>
+      <div className="flex flex-col lg:pt-[100px]">
+        <h2 className="mb-3 text-lg font-semibold">
+          Players <span className="tabular font-normal text-muted-foreground">{players.length}/{room.maxPlayers}</span>
+        </h2>
+        <ul className="flex flex-col gap-2">
+          {Array.from({ length: room.maxPlayers }).map((_, idx) => {
+            const p = players[idx];
+            const isMe = p?.playerUid === playerUid;
+            return (
+              <li key={idx} className={`flex items-center gap-4 rounded-xl p-4 ${p ? 'bg-card' : 'bg-card/50'}`}>
+                <div className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-full bg-raised">
+                  {p?.avatar ? (
+                    <img src={p.avatar} alt="" className="h-full w-full object-cover" referrerPolicy="no-referrer" />
+                  ) : p ? (
+                    <span className="font-semibold">{p.name.charAt(0).toUpperCase()}</span>
+                  ) : null}
+                </div>
+                <div className="min-w-0">
+                  <p className={`truncate font-medium ${p ? '' : 'text-faint'}`}>{p ? p.name : 'Open seat'}</p>
+                  {p && (
+                    <p className="text-sm text-muted-foreground">
+                      {[idx === 0 && 'Host', isMe && 'You', p.status === 'offline' && 'Offline'].filter(Boolean).join(' · ')}
+                    </p>
+                  )}
+                </div>
+              </li>
+            );
+          })}
+        </ul>
 
-      {spectators.length > 0 && (
-        <>
-          <h2 className="mb-3 mt-10 text-lg font-semibold">Watching</h2>
-          <p className="text-muted-foreground">
-            {spectators.map((s) => (s.playerUid === playerUid ? `${s.name} (you)` : s.name)).join(', ')}
-          </p>
-        </>
-      )}
-
-      <div className="mt-10 flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <Button variant="ghost" onClick={handleLeave}>
-          Leave room
-        </Button>
-        {isHost ? (
-          <div className="flex items-center gap-4">
-            {!canStart && <span className="text-sm text-muted-foreground">Waiting for another player</span>}
-            <Button size="lg" disabled={!canStart} onClick={handleStartGame}>
-              Start game
-            </Button>
-          </div>
-        ) : (
-          <p className="text-muted-foreground">
-            {isSpectator ? "You're watching" : `Waiting for ${host?.name ?? 'the host'} to start`}
-          </p>
+        {spectators.length > 0 && (
+          <>
+            <h2 className="mb-3 mt-10 text-lg font-semibold">Watching</h2>
+            <p className="text-muted-foreground">
+              {spectators.map((s) => (s.playerUid === playerUid ? `${s.name} (you)` : s.name)).join(', ')}
+            </p>
+          </>
         )}
+
+        <div className="mt-10 flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <Button variant="ghost" onClick={handleLeave}>
+            Leave room
+          </Button>
+          {isHost ? (
+            <div className="flex items-center gap-4">
+              {!canStart && <span className="text-sm text-muted-foreground">Waiting for another player</span>}
+              <Button size="lg" disabled={!canStart} onClick={handleStartGame}>
+                Start game
+              </Button>
+            </div>
+          ) : (
+            <p className="text-muted-foreground">
+              {isSpectator ? "You're watching" : `Waiting for ${host?.name ?? 'the host'} to start`}
+            </p>
+          )}
+        </div>
       </div>
     </div>
   );

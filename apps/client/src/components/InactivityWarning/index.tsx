@@ -14,9 +14,10 @@ export function InactivityWarning({ ttlWarning, onExtend }: InactivityWarningPro
           <motion.div
             role="alertdialog"
             aria-labelledby="inactivity-title"
-            initial={{ y: -24, opacity: 0 }}
+            initial={{ y: -8, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
-            exit={{ y: -24, opacity: 0 }}
+            exit={{ y: -8, opacity: 0 }}
+            transition={{ duration: 0.2, ease: "easeOut" }}
             className="pointer-events-auto flex w-full max-w-sm flex-col gap-3 rounded-xl bg-raised p-5 shadow-pop"
           >
             <h2 id="inactivity-title" className="text-lg font-semibold">Still there?</h2>

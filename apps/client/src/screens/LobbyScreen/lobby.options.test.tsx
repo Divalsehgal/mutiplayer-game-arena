@@ -155,6 +155,6 @@ describe('LobbyScreen options and open rooms', () => {
 
     it('shows an empty state when there are no open rooms', () => {
         render(<BrowserRouter><LobbyScreen /></BrowserRouter>);
-        expect(screen.getByText('No open rooms right now.')).toBeDefined();
+        expect(screen.getByText(/No open rooms right now/)).toBeDefined();
     });
 });

@@ -39,7 +39,7 @@ export const snakeLadderGameHandler = {
               winner: null,
               lastRoll: null,
               readyPlayers: [],
-              logs: ["Game started. Good luck!"]
+              logs: ["Game started"]
             }
         };
     }
@@ -120,7 +120,7 @@ export const snakeLadderGameHandler = {
     if (newPos === 100) {
       winner = playerUid;
       newStatus = "finished";
-      log += ` Reached 100 and won!`;
+      log += ` Reached 100 and won.`;
     }
 
     return {
