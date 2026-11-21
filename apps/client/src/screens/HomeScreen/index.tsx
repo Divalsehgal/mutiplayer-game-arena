@@ -55,18 +55,20 @@ export default function HomeScreen() {
           <h1 className="text-[clamp(44px,6.4vw,96px)] font-semibold leading-[0.98] tracking-[-0.035em]">
             Quick games with friends
           </h1>
-          <p className="mt-8 max-w-[40ch] text-lg sm:text-xl">
-            Play tic-tac-toe, rock paper scissors or snakes and ladders in real time, or solve today's Sudoku. It
-            all runs in your browser.
-          </p>
-          <div className="mt-10 flex flex-wrap gap-3">
+          <Reveal immediate>
+            <p className="mt-8 max-w-[40ch] text-lg sm:text-xl">
+              Play tic-tac-toe, rock paper scissors or snakes and ladders in real time, or solve today's Sudoku. It
+              all runs in your browser.
+            </p>
+          </Reveal>
+          <Reveal immediate order={1} className="mt-10 flex flex-wrap gap-3">
             <Button asChild size="lg">
               <Link to="/play">Play with friends</Link>
             </Button>
             <Button asChild size="lg" variant="secondary">
               <Link to="/sudoku">Today's Sudoku</Link>
             </Button>
-          </div>
+          </Reveal>
         </div>
         <Reveal immediate order={2} className="md:justify-self-end">
           <TodayCard />

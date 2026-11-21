@@ -16,7 +16,7 @@ function MoveSlot({ move }: { move?: string | null }) {
   return (
     <div className="w-24 h-24 sm:w-32 sm:h-32 rounded-2xl flex items-center justify-center mb-4 sm:mb-6 bg-secondary">
       {found ? (
-        <motion.span initial={{ scale: 0.6 }} animate={{ scale: 1 }} className="flex flex-col items-center gap-1">
+        <motion.span initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.15, ease: "easeOut" }} className="flex flex-col items-center gap-1">
           <found.Icon className="w-12 h-12 sm:w-16 sm:h-16" aria-hidden />
           <span className="text-sm font-medium">{found.value}</span>
         </motion.span>
@@ -61,11 +61,11 @@ export function RPSArena({
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            className="absolute inset-[-16px] sm:inset-[-40px] z-50 flex flex-col items-center justify-center bg-card/95"
+            className="absolute -inset-4 sm:-inset-10 z-50 flex flex-col items-center justify-center bg-card/95"
           >
             <motion.div
-              initial={{ scale: 0.9, y: 20 }}
-              animate={{ scale: 1, y: 0 }}
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.2, ease: "easeOut" }}
               className="flex flex-col items-center text-center p-4 sm:p-8"
             >
               {findMove(myMove) && findMove(opponentMove) && (
@@ -73,7 +73,7 @@ export function RPSArena({
                   {myMove} vs {opponentMove}
                 </p>
               )}
-              <h2 className="text-2xl sm:text-3xl font-bold mb-6">{resultTitle}</h2>
+              <h2 className="text-2xl sm:text-3xl font-semibold mb-6">{resultTitle}</h2>
 
               {isPlayer ? (
                 <div className="flex flex-col gap-2 w-full min-w-52 sm:min-w-64">

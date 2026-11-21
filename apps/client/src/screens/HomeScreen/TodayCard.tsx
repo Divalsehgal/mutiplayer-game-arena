@@ -54,7 +54,7 @@ export function TodayCard() {
                 <span
                   key={k}
                   className={`tabular flex aspect-square items-center justify-center text-[clamp(13px,3.6vw,20px)] font-medium ${
-                    index === cursor ? "turn-pulse bg-accent" : "bg-white"
+                    index === cursor ? "bg-accent" : "bg-white"
                   }`}
                 >
                   {value || ""}

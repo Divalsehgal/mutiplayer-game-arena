@@ -24,7 +24,7 @@ export function SnakeLadderArena({
   const currentTurnName = nameOf(state.currentTurn);
 
   const resultTitle = isPlayer && winner === playerUid
-    ? 'You win!'
+    ? 'You win'
     : `${nameOf(winner) ?? 'Your opponent'} wins`;
 
   return (
@@ -34,14 +34,14 @@ export function SnakeLadderArena({
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            className="absolute inset-[-16px] sm:inset-[-40px] z-50 flex flex-col items-center justify-center bg-card/95"
+            className="absolute -inset-4 sm:-inset-10 z-50 flex flex-col items-center justify-center bg-card/95"
           >
             <motion.div
-              initial={{ scale: 0.9, y: 20 }}
-              animate={{ scale: 1, y: 0 }}
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.2, ease: "easeOut" }}
               className="flex flex-col items-center text-center p-4 sm:p-8"
             >
-              <h2 className="text-2xl sm:text-3xl font-bold mb-6">{resultTitle}</h2>
+              <h2 className="text-2xl sm:text-3xl font-semibold mb-6">{resultTitle}</h2>
 
               {isPlayer ? (
                 <div className="flex flex-col gap-2 w-full min-w-[200px] sm:min-w-[240px]">
@@ -90,9 +90,9 @@ export function SnakeLadderArena({
               title={title}
               className={`relative flex items-center justify-center text-[8px] sm:text-[10px] rounded-sm aspect-square ${
                 ladderTo
-                  ? 'bg-[#222a10]'
+                  ? 'bg-ladder'
                   : snakeTo
-                    ? 'bg-[#2c1a20]'
+                    ? 'bg-snake'
                     : displayNum % 2 === 0 ? 'bg-card' : 'bg-secondary'
               }`}
             >
@@ -134,7 +134,7 @@ export function SnakeLadderArena({
         <div className="flex items-center gap-4 w-full justify-between">
           <div className="flex flex-col">
             <span className="text-xs text-muted-foreground">Last roll</span>
-            <span className="text-2xl sm:text-3xl font-bold tabular-nums">{state.lastRoll || '–'}</span>
+            <span className="text-2xl sm:text-3xl font-semibold tabular-nums">{state.lastRoll || '–'}</span>
           </div>
 
           {isPlayer ? (

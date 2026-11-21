@@ -70,7 +70,7 @@ export default function LobbyScreen() {
       <h1 className="mb-8 text-3xl font-semibold tracking-tight sm:text-4xl">Play</h1>
 
       {error && (
-        <p role="alert" className="mb-6 rounded-md bg-[#2c1a20] p-3 text-sm text-[#e5566f]">
+        <p role="alert" className="mb-6 rounded-md bg-danger-surface p-3 text-sm text-danger-ink">
           {error}
         </p>
       )}
@@ -100,7 +100,7 @@ export default function LobbyScreen() {
                 value={roomId}
                 maxLength={16}
                 onChange={(e) => setRoomId(e.target.value.toUpperCase())}
-                className="tabular tracking-wider"
+                className="tabular"
               />
               <Button type="submit" disabled={loading} className="h-11 px-6">
                 Join

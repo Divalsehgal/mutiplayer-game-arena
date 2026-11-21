@@ -55,7 +55,7 @@ describe('SnakeLadderArena', () => {
             gameState: { ...defaultProps.gameState, winner: 'u1' } 
         };
         render(<SnakeLadderArena {...props} />);
-        expect(screen.getByText(/You win!/i)).toBeDefined();
+        expect(screen.getByText(/You win/i)).toBeDefined();
         
         // Test handleNextRound
         const rematchButton = screen.getByRole('button', { name: /Play again/i });

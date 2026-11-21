@@ -24,9 +24,9 @@ export function SudokuBoard({ grid, puzzle, conflicts, selected, onSelect }: Sud
     const background = isSelected
       ? "bg-accent text-accent-foreground"
       : selectedValue !== 0 && value === selectedValue
-        ? "bg-[#33401a]"
+        ? "bg-match"
         : peers?.has(i)
-          ? "bg-[#1c1c1c]"
+          ? "bg-peer"
           : "bg-card hover:bg-secondary";
     const ink = isSelected ? "" : conflict ? "text-destructive" : given ? "font-semibold" : "text-accent";
 

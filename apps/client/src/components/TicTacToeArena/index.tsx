@@ -28,7 +28,7 @@ export function TicTacToeArena({
   const resultTitle = isDraw
     ? "It's a draw"
     : isPlayer && winner === playerUid
-      ? 'You win!'
+      ? 'You win'
       : `${nameOf(winner) ?? 'Your opponent'} wins`;
 
   const turnText = isMyTurn && isPlayer
@@ -44,14 +44,14 @@ export function TicTacToeArena({
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            className="absolute inset-[-16px] sm:inset-[-40px] z-50 flex flex-col items-center justify-center bg-card/95"
+            className="absolute -inset-4 sm:-inset-10 z-50 flex flex-col items-center justify-center bg-card/95"
           >
             <motion.div
-              initial={{ scale: 0.9, y: 20 }}
-              animate={{ scale: 1, y: 0 }}
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.2, ease: "easeOut" }}
               className="flex flex-col items-center text-center p-4 sm:p-8"
             >
-              <h2 className="text-2xl sm:text-3xl font-bold mb-6">{resultTitle}</h2>
+              <h2 className="text-2xl sm:text-3xl font-semibold mb-6">{resultTitle}</h2>
 
               {isPlayer ? (
                 <div className="flex flex-col gap-2 w-full min-w-[200px] sm:min-w-[240px]">
@@ -94,7 +94,7 @@ export function TicTacToeArena({
               whileTap={clickable ? { scale: 0.95 } : {}}
               onClick={() => handleCellClick(i)}
               className={`
-                flex items-center justify-center text-4xl sm:text-5xl font-bold rounded-xl bg-secondary transition-colors
+                flex items-center justify-center text-4xl sm:text-5xl font-medium rounded-xl bg-secondary transition-colors
                 ${clickable ? 'cursor-pointer hover:bg-raised' : 'cursor-default'}
                 ${cell === 'X' ? 'text-accent' : 'text-foreground'}
               `}
@@ -102,8 +102,8 @@ export function TicTacToeArena({
               <AnimatePresence mode="wait">
                 {cell && (
                   <motion.span
-                    initial={{ scale: 0, opacity: 0 }}
-                    animate={{ scale: 1, opacity: 1 }}
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }} transition={{ duration: 0.15, ease: "easeOut" }}
                   >
                     {cell}
                   </motion.span>

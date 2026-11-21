@@ -48,7 +48,7 @@ function App() {
   return (
     <BrowserRouter>
       <AuthBootstrap />
-      <div id="top" className="flex min-h-screen flex-col">
+      <div id="top" className="flex min-h-svh flex-col">
         <TopBar />
         <ConnectionBanner />
         <main className="flex flex-1 flex-col">

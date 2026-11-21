@@ -108,11 +108,7 @@ const AuthScreen = () => {
               isLoading={isLoading || submitting}
             />
 
-            <div className="flex items-center gap-3 text-sm text-faint">
-              <span className="h-px flex-1 bg-raised" />
-              or
-              <span className="h-px flex-1 bg-raised" />
-            </div>
+            <p className="text-center text-sm text-faint">or</p>
 
             <div className="flex justify-center">
               <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
@@ -127,7 +123,7 @@ const AuthScreen = () => {
             </div>
 
             {error && (
-              <p role="alert" className="rounded-md bg-[#2c1a20] p-3 text-center text-sm text-[#e5566f]">
+              <p role="alert" className="rounded-md bg-danger-surface p-3 text-center text-sm text-danger-ink">
                 {error}
               </p>
             )}

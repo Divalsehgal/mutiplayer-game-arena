@@ -70,7 +70,7 @@ describe('TicTacToeArena', () => {
             } 
         };
         render(<TicTacToeArena {...props} />);
-        expect(screen.getByText(/You win!/i)).toBeDefined();
+        expect(screen.getByText(/You win/i)).toBeDefined();
         expect(screen.getByRole('button', { name: /Play again/i })).toBeDefined();
     });
 

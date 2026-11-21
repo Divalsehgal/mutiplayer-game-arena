@@ -7,15 +7,10 @@ import { usePageMeta } from '../../hooks/usePageMeta';
 import { InactivityWarning } from '../../components/InactivityWarning';
 import { SessionSupersededScreen } from '../../components/SessionSupersededScreen';
 import { GAME_NAMES } from '@arena/shared';
+import { Spinner } from "../../components/ui/spinner";
 
 const MIN_PLAYERS_TO_START = 2;
 const COPIED_FEEDBACK_MS = 2000;
-
-const Spinner = () => (
-  <div className="flex flex-1 items-center justify-center">
-    <div className="h-8 w-8 animate-spin rounded-full border-2 border-raised border-t-white" />
-  </div>
-);
 
 export default function RoomScreen() {
   usePageMeta({ title: 'Waiting room', noindex: true });
@@ -72,7 +67,7 @@ export default function RoomScreen() {
       <div className="mt-8 flex items-center justify-between gap-4 rounded-xl bg-card p-5">
         <div>
           <p className="text-sm text-muted-foreground">Room code</p>
-          <p className="tabular text-3xl font-semibold tracking-widest">{room.id}</p>
+          <p className="tabular text-3xl font-semibold tracking-wide">{room.id}</p>
         </div>
         <Button variant="secondary" onClick={copyRoomCode}>
           {copied ? <Check className="h-4 w-4 text-accent" aria-hidden /> : <Copy className="h-4 w-4" aria-hidden />}

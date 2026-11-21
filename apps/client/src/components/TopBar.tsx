@@ -31,7 +31,7 @@ const TopBar = () => {
               key={item.to}
               to={item.to}
               className={({ isActive }) =>
-                `whitespace-nowrap transition-colors hover:text-foreground ${isActive ? "text-foreground" : "text-[#bbbbbb]"}`
+                `whitespace-nowrap transition-colors hover:text-foreground ${isActive ? "text-foreground" : "text-muted-foreground"}`
               }
             >
               {item.label}

@@ -3,6 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "../../components/ui/button";
 import { useGameLogic } from "../../hooks/useGameLogic";
 import { usePageMeta } from "../../hooks/usePageMeta";
+import { Spinner } from "../../components/ui/spinner";
 
 // Components
 import { InactivityWarning } from "../../components/InactivityWarning";
@@ -49,9 +50,7 @@ export default function GameScreen() {
 
   if (!room || !room.gameState)
     return (
-      <div className="flex flex-1 items-center justify-center">
-        <div className="h-8 w-8 animate-spin rounded-full border-2 border-raised border-t-white" />
-      </div>
+      <Spinner />
     );
 
   const gameState = room.gameState as GameState;

@@ -18,7 +18,7 @@ export function TicTacToeFrame() {
           <span
             key={i}
             className={`flex aspect-square items-center justify-center rounded-lg bg-secondary ${
-              i === 8 ? "turn-pulse ring-2 ring-inset ring-white/60" : ""
+              i === 8 ? "ring-2 ring-inset ring-white/60" : ""
             }`}
           >
             {mark === "X" && <X className="h-3/5 w-3/5 text-accent" strokeWidth={3} />}
@@ -81,14 +81,14 @@ export function SnakesFrame() {
             <span
               key={n}
               className={`relative flex aspect-square items-center justify-center rounded-sm text-[11px] ${
-                ladder ? "bg-[#222a10]" : snake ? "bg-[#2c1a20]" : n % 2 ? "bg-secondary" : "bg-[#171717]"
+                ladder ? "bg-ladder" : snake ? "bg-snake" : n % 2 ? "bg-secondary" : "bg-card"
               }`}
             >
               <span className="absolute left-1 top-0.5 text-faint">{n}</span>
               {ladder && <ArrowUp className="h-4 w-4 text-success" />}
               {snake && <ArrowDown className="h-4 w-4 text-destructive" />}
               {n === YOU_AT && <span className="h-3 w-3 rounded-full bg-accent ring-1 ring-black" />}
-              {n === DANA_AT && <span className="turn-pulse h-3 w-3 rounded-full bg-white ring-1 ring-black" />}
+              {n === DANA_AT && <span className="h-3 w-3 rounded-full bg-white ring-1 ring-black" />}
             </span>
           );
         })}
